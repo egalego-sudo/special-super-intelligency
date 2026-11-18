@@ -28,7 +28,7 @@ Develop an independently engineered AI system for reasoning, coding, scientific 
 
 ## Current limitations
 
-This is an early research prototype, not a trained foundation model or production AI assistant. The MLP and next-byte regressor are educational baselines; attention is not yet integrated into a trainable Transformer. There is no multimodal model, large-scale training pipeline, persistent encrypted memory, or autonomous multi-agent runtime. The Docker sandbox currently has mocked unit tests only; real container integration and hostile-code isolation are NOT VERIFIED.
+This is an early research prototype, not a trained foundation model or production AI assistant. The MLP and next-byte regressor are educational baselines; attention is not yet integrated into a trainable Transformer. There is no multimodal model, large-scale training pipeline, persistent encrypted memory, or autonomous multi-agent runtime. The Docker sandbox has a GitHub Actions integration test for non-root execution, read-only root filesystem, writable temporary storage, and disabled networking. This does not prove resistance to kernel/container escapes; highly hostile workloads still require a VM or dedicated sandbox.
 
 ## Verification
 
