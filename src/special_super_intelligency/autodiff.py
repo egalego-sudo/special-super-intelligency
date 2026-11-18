@@ -114,6 +114,11 @@ class Value:
                 topo.append(node)
 
         build(self)
+        # Intermediate gradients belong to this traversal; clear them before
+        # recomputation while preserving accumulated gradients on leaf values.
+        for node in topo:
+            if node._prev:
+                node.grad = 0.0
         self.grad += 1.0
         for node in reversed(topo):
             node._backward()
