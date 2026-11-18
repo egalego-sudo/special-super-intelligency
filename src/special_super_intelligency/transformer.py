@@ -100,9 +100,12 @@ class DecoderTransformerBlock:
         output = []
         for token in residual:
             hidden = _linear(_norm(token), self.ffn_in)
-            activated = [0.5 * x * (1.0 + _tanh(
-                math.sqrt(2.0 / math.pi) * (x + 0.044715 * x ** 3))))
-                         for x in hidden]
+            activated = [
+                0.5 * x * (1.0 + _tanh(
+                    math.sqrt(2.0 / math.pi) * (x + 0.044715 * x ** 3)
+                ))
+                for x in hidden
+            ]
             projected = _linear(activated, self.ffn_out)
             output.append([token[i] + projected[i] for i in range(self.width)])
         return output
