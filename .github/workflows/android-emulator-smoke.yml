@@ -1,0 +1,146 @@
+name: Android Emulator Smoke
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '*.gradle.kts'
+      - 'settings.gradle.kts'
+      - '.github/workflows/android-emulator-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  emulator-smoke:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Install emulator and Android 35 image
+        run: |
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "emulator" "platforms;android-35" "build-tools;35.0.0" "system-images;android-35;google_apis;x86_64"
+      - name: Create Android virtual device
+        run: |
+          echo "no" | avdmanager create avd --force --name ssi-api35 --package "system-images;android-35;google_apis;x86_64" --device "pixel_2"
+      - name: Build APK and JVM unit tests
+        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
+      - name: Boot emulator
+        run: |
+          if [ -e /dev/kvm ]; then ACCEL=on; else ACCEL=off; fi
+          emulator -avd ssi-api35 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel "$ACCEL" > /tmp/ssi-emulator.log 2>&1 &
+          adb wait-for-device
+          for i in $(seq 1 180); do
+            BOOTED="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            if [ "$BOOTED" = "1" ]; then break; fi
+            sleep 2
+          done
+          test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1"
+          adb shell settings put global window_animation_scale 0
+          adb shell settings put global transition_animation_scale 0
+          adb shell settings put global animator_duration_scale 0
+      - name: Install and launch app
+        run: |
+          adb install app/build/outputs/apk/debug/app-debug.apk
+          adb shell am start -n com.bittupandit.ssi/.MainActivity
+          sleep 12
+          mkdir -p /tmp/ssi-emulator
+          adb shell uiautomator dump /sdcard/ssi-window.xml
+          adb pull /sdcard/ssi-window.xml /tmp/ssi-emulator/online.xml
+          adb exec-out screencap -p > /tmp/ssi-emulator/online.png
+      - name: Verify dashboard, live sync, and 48dp touch target
+        run: |
+          python - <<'PY'
+          import re
+          import xml.etree.ElementTree as ET
+
+          path = "/tmp/ssi-emulator/online.xml"
+          root = ET.parse(path).getroot()
+          nodes = list(root.iter("node"))
+          texts = [node.attrib.get("text", "") for node in nodes]
+          required = ["14-MODULE CONTROL CENTER", "Creator by Bittu Pandit", "LIVE CONFIG SYNCED"]
+          for item in required:
+              if not any(item in value for value in texts):
+                  raise SystemExit(f"Missing expected live dashboard text: {item}")
+          buttons = [node for node in nodes if "OPEN MODULE" in node.attrib.get("text", "")]
+          if len(buttons) != 14:
+              raise SystemExit(f"Expected 14 module buttons, found {len(buttons)}")
+          match = re.search(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", buttons[0].attrib.get("bounds", ""))
+          if not match:
+              raise SystemExit("Could not read first module button bounds")
+          x1,y1,x2,y2 = map(int, match.groups())
+          density_text = open("/tmp/ssi-emulator/density.txt").read().strip()
+          density = int(density_text.split(":")[-1].strip()) if ":" in density_text else int(density_text)
+          height_dp = (y2-y1) * 160 / density
+          if height_dp < 48:
+              raise SystemExit(f"Module button height is only {height_dp:.1f}dp")
+          print(f"Dashboard UI passed: {len(buttons)} module buttons; first button height {height_dp:.1f}dp")
+          PY
+      - name: Open first module and verify navigation dialog
+        run: |
+          adb shell wm density > /tmp/ssi-emulator/density.txt
+          COORDS="$(python - <<'PY'
+          import re
+          import xml.etree.ElementTree as ET
+          root=ET.parse("/tmp/ssi-emulator/online.xml").getroot()
+          node=next(n for n in root.iter("node") if "OPEN MODULE" in n.attrib.get("text",""))
+          m=re.search(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",node.attrib["bounds"])
+          x1,y1,x2,y2=map(int,m.groups())
+          print((x1+x2)//2,(y1+y2)//2)
+          PY
+          )"
+          adb shell input tap $COORDS
+          sleep 2
+          adb shell uiautomator dump /sdcard/ssi-dialog.xml
+          adb pull /sdcard/ssi-dialog.xml /tmp/ssi-emulator/dialog.xml
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          texts=[n.attrib.get("text","") for n in ET.parse("/tmp/ssi-emulator/dialog.xml").getroot().iter("node")]
+          for expected in ("EDIT MODULE FILE","OPEN MODULE DOC","SEARCH CODE"):
+              if expected not in texts:
+                  raise SystemExit(f"Module dialog missing: {expected}")
+          print("Module navigation dialog passed.")
+          PY
+      - name: Verify offline fallback
+        run: |
+          adb shell cmd connectivity airplane-mode enable || true
+          adb shell settings put global airplane_mode_on 1
+          adb shell am broadcast -a android.intent.action.AIRPLANE_MODE --ez state true || true
+          adb shell am force-stop com.bittupandit.ssi
+          adb shell am start -n com.bittupandit.ssi/.MainActivity
+          sleep 12
+          adb shell uiautomator dump /sdcard/ssi-offline.xml
+          adb pull /sdcard/ssi-offline.xml /tmp/ssi-emulator/offline.xml
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          texts=[n.attrib.get("text","") for n in ET.parse("/tmp/ssi-emulator/offline.xml").getroot().iter("node")]
+          if not any("Offline mode" in value for value in texts):
+              raise SystemExit("Offline fallback status was not displayed.")
+          print("Offline fallback passed.")
+          PY
+      - name: Upload emulator screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssi-android-emulator-smoke
+          path: |
+            /tmp/ssi-emulator/
+            /tmp/ssi-emulator.log
+          if-no-files-found: warn
