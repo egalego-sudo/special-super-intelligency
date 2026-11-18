@@ -9,7 +9,7 @@
 | 01 | Implement multi-head causal decoder block with pre-norm, residual and feed-forward paths | COMPLETE | `transformer.py`; causal-mask, shape, determinism and input-validation tests pass in CI |
 | 02 | Compose token embeddings, positional encoding, stacked decoder blocks and vocabulary projection | COMPLETE | `DecoderLanguageModel`; logits, softmax, generation, context-limit and future-token isolation tests pass in CI |
 | 03 | Add supervised next-token training for the vocabulary output head | COMPLETE | Cross-entropy SGD training reduces loss on a deterministic tiny dataset; invalid target test; CI pass |
-| 04 | Implement end-to-end backpropagation through embeddings, attention and feed-forward blocks | NOT STARTED | Gradient derivation and finite-difference verification |
+| 04 | Implement end-to-end backpropagation through embeddings, attention and feed-forward blocks | COMPLETE | `autodiff.py` reverse-mode engine; model trainer updates embeddings, Q/K/V attention, attention output, FFN and vocabulary projection; scalar and full-model finite-difference checks; CI 89 tests passed |
 | 05 | Add AdamW optimizer, gradient clipping and numerical stability checks | NOT STARTED | Optimizer unit tests and deterministic update tests |
 | 06 | Add full-model versioned checkpoint save/load | NOT STARTED | Round-trip, malformed and incompatible checkpoint tests |
 | 07 | Integrate byte tokenizer and provenance-checked text dataset into the decoder model | NOT STARTED | End-to-end encode/train/evaluate integration test |
@@ -29,11 +29,11 @@
 
 ## Verified progress
 
-**15% — 3 of 20 Phase 2 packages complete.**
+**20% — 4 of 20 Phase 2 packages complete.**
 
-The current implementation is an early research prototype. The decoder blocks, embeddings, positional encoding, language-model inference path, greedy generation and trainable vocabulary output projection exist. The training method currently updates only the output projection; token embeddings and decoder blocks remain frozen. It is not yet end-to-end trained and has no demonstrated broad language competence.
+The current implementation is an early research prototype. It now includes a dependency-free reverse-mode scalar autodiff engine and a reference trainer that propagates gradients through embeddings, causal attention projections, attention output, feed-forward weights and the vocabulary projection. A deterministic tiny-corpus test verifies loss reduction and updates to embedding, attention and FFN weights; a full-model parameter gradient is checked against finite differences. This is a correctness milestone, not evidence of broad language competence or useful-scale training.
 
-Current GitHub CI on commit `0a2c792332379f73515e1d9ad908d042ee62fae2`: 77 pytest tests passed; Ruff passed. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI.
+Current GitHub CI on commit `72b267d92d05e2a47729b9a030acc39696bbb670`: 89 pytest tests passed; Ruff passed. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI.
 
 ## Non-claims and release gates
 
