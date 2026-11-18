@@ -9,8 +9,8 @@
 | 01 | Implement multi-head causal decoder block with pre-norm, residual and feed-forward paths | COMPLETE | `transformer.py`; causal-mask, shape, determinism and input-validation tests pass in CI |
 | 02 | Compose token embeddings, positional encoding, stacked decoder blocks and vocabulary projection | COMPLETE | `DecoderLanguageModel`; logits, softmax, generation, context-limit and future-token isolation tests pass in CI |
 | 03 | Add supervised next-token training for the vocabulary output head | COMPLETE | Cross-entropy SGD training reduces loss on a deterministic tiny dataset; invalid target test; CI pass |
-| 04 | Implement end-to-end backpropagation through embeddings, attention and feed-forward blocks | COMPLETE | `autodiff.py` reverse-mode engine; model trainer updates embeddings, Q/K/V attention, attention output, FFN and vocabulary projection; scalar and full-model finite-difference checks; CI 89 tests passed |
-| 05 | Add AdamW optimizer, gradient clipping and numerical stability checks | NOT STARTED | Optimizer unit tests and deterministic update tests |
+| 04 | Implement end-to-end backpropagation through embeddings, attention and feed-forward blocks | COMPLETE | `autodiff.py` reverse-mode engine; model trainer updates embeddings, Q/K/V attention, attention output, FFN and vocabulary projection; scalar and full-model finite-difference checks; CI 98 tests passed |
+| 05 | Add AdamW optimizer, gradient clipping and numerical stability checks | COMPLETE | `optim.py` AdamW with bias correction, decoupled weight decay, global norm clipping and non-finite guards; integrated into model trainer; optimizer and end-to-end training CI tests pass |
 | 06 | Add full-model versioned checkpoint save/load | NOT STARTED | Round-trip, malformed and incompatible checkpoint tests |
 | 07 | Integrate byte tokenizer and provenance-checked text dataset into the decoder model | NOT STARTED | End-to-end encode/train/evaluate integration test |
 | 08 | Add minibatching, padding and causal/padding attention masks | NOT STARTED | Variable-length batch and mask-leakage tests |
@@ -29,11 +29,11 @@
 
 ## Verified progress
 
-**20% — 4 of 20 Phase 2 packages complete.**
+**25% — 5 of 20 Phase 2 packages complete.**
 
 The current implementation is an early research prototype. It now includes a dependency-free reverse-mode scalar autodiff engine and a reference trainer that propagates gradients through embeddings, causal attention projections, attention output, feed-forward weights and the vocabulary projection. A deterministic tiny-corpus test verifies loss reduction and updates to embedding, attention and FFN weights; a full-model parameter gradient is checked against finite differences. This is a correctness milestone, not evidence of broad language competence or useful-scale training.
 
-Current GitHub CI on commit `72b267d92d05e2a47729b9a030acc39696bbb670`: 89 pytest tests passed; Ruff passed. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI.
+Current GitHub CI on commit `5e53ab9d13e38a3f585dfc5571b154c237478a58`: 98 pytest tests passed; Ruff passed. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI. Android emulator smoke previously exposed `UnknownHostException` for `raw.githubusercontent.com`; the workflow now records remote sync as NOT VERIFIED when emulator DNS is unavailable, while independently checking the remote JSON from the runner and continuing UI/offline tests.
 
 ## Non-claims and release gates
 
