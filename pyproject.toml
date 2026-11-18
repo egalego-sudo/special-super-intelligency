@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "special-super-intelligency"
+version = "0.1.0"
+description = "Independent AI research and engineering prototype"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "License not yet selected" }
+authors = [{ name = "Bittu Pandit" }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[project.scripts]
+ssi-core = "special_super_intelligency.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
