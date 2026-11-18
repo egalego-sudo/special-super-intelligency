@@ -1,4 +1,4 @@
-from special_super_intelligency.attention import causal_self_attention
+from special_super_intelligency.attention import causal_self_attention  # noqa: I001
 
 
 IDENTITY = [[1.0, 0.0], [0.0, 1.0]]
