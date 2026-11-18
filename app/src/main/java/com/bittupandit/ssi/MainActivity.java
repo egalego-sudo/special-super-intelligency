@@ -22,11 +22,14 @@ import java.util.ArrayList;
 public class MainActivity extends Activity {
     private static final String REPO = "https://github.com/egalego-sudo/special-super-intelligency";
     private static final String RAW_CONFIG = "https://raw.githubusercontent.com/egalego-sudo/special-super-intelligency/android-control-app-v1/app-config/dashboard.json";
-    private static final int BG = Color.rgb(246, 248, 252);
-    private static final int INK = Color.rgb(25, 34, 52);
-    private static final int MUTED = Color.rgb(102, 115, 136);
-    private static final int ACCENT = Color.rgb(89, 73, 196);
-    private static final int TEAL = Color.rgb(0, 139, 135);
+    private static final int BG = Color.BLACK;
+    private static final int CARD = Color.rgb(18, 18, 20);
+    private static final int SURFACE = Color.rgb(36, 36, 40);
+    private static final int STROKE = Color.rgb(54, 54, 60);
+    private static final int INK = Color.WHITE;
+    private static final int MUTED = Color.rgb(178, 182, 192);
+    private static final int ACCENT = Color.rgb(166, 151, 255);
+    private static final int TEAL = Color.rgb(91, 220, 210);
     private LinearLayout root, moduleList;
     private TextView syncStatus, versionText;
     private final ArrayList<Module> modules = new ArrayList<>();
@@ -43,9 +46,9 @@ public class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        getWindow().setStatusBarColor(Color.rgb(246,248,252));
-        getWindow().setNavigationBarColor(Color.rgb(246,248,252));
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+        getWindow().getDecorView().setSystemUiVisibility(0);
         buildShell();
         loadFallbackModules();
         renderModules();
@@ -70,7 +73,7 @@ public class MainActivity extends Activity {
         root.addView(label("14-MODULE CONTROL CENTER",12,MUTED,true));
         root.addView(space(16));
 
-        LinearLayout hero = panel(Color.rgb(29,34,58),18);
+        LinearLayout hero = panel(Color.rgb(15, 15, 18),18);
         TextView heroTag=label("PROJECT COMMAND",11,Color.rgb(174,222,220),true);
         TextView heroTitle=label("One place. Fourteen workstreams.",19,Color.WHITE,true);
         TextView heroNote=label("Track research, open each module and sync its live dashboard configuration.",13,Color.rgb(222,226,239),false);
@@ -82,7 +85,7 @@ public class MainActivity extends Activity {
         Button sync = actionButton("⟳  SYNC DASHBOARD",ACCENT,Color.WHITE);
         sync.setOnClickListener(v -> syncDashboard());
         actionRow.addView(sync,new LinearLayout.LayoutParams(0,-2,1));
-        Button repo = actionButton("REPOSITORY",Color.rgb(226,230,240),INK);
+        Button repo = actionButton("REPOSITORY",SURFACE,INK);
         repo.setOnClickListener(v -> open(REPO));
         LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(0,-2,1); rp.leftMargin=dp(8);
         actionRow.addView(repo,rp);
@@ -99,7 +102,7 @@ public class MainActivity extends Activity {
         moduleList.setOrientation(LinearLayout.VERTICAL);
         root.addView(moduleList);
 
-        LinearLayout quick = panel(Color.WHITE,16);
+        LinearLayout quick = panel(CARD,16);
         quick.addView(label("ENGINEERING SHORTCUTS",11,ACCENT,true));
         quick.addView(label("Tests, progress and review history",15,INK,true));
         addWideAction(quick,"OPEN CODE & UPDATE FILES",REPO+"/tree/android-control-app-v1");
@@ -155,7 +158,14 @@ public class MainActivity extends Activity {
                 JSONObject config=new JSONObject(body.toString());
                 JSONArray arr=config.getJSONArray("modules");
                 ArrayList<Module> fresh=new ArrayList<>();
-                for(int i=0;i<arr.length();i++) fresh.add(new Module(arr.getJSONObject(i)));
+                for(int i=0;i<arr.length();i++) {
+                    JSONObject item=arr.getJSONObject(i);
+                    String docUrl=item.optString("doc_url");
+                    if (!docUrl.matches("https://github\\\\.com/egalego-sudo/special-super-intelligency/blob/(android-control-app-v1|main)/docs/modules/[0-9]{2}-[a-z0-9-]+\\\\.md")) {
+                        throw new Exception("Rejected module document URL");
+                    }
+                    fresh.add(new Module(item));
+                }
                 if(fresh.size()!=14) throw new Exception("Expected 14 modules");
                 runOnUiThread(() -> {
                     modules.clear();modules.addAll(fresh);renderModules();
@@ -173,12 +183,12 @@ public class MainActivity extends Activity {
         moduleList.removeAllViews();
         for(int i=0;i<modules.size();i++) {
             final Module m=modules.get(i);
-            LinearLayout card=panel(Color.WHITE,15);
+            LinearLayout card=panel(CARD,15);
             LinearLayout top=new LinearLayout(this);
             top.setOrientation(LinearLayout.HORIZONTAL);
             TextView number=label(String.format(java.util.Locale.US,"%02d",i+1),13,ACCENT,true);
             number.setGravity(Gravity.CENTER);
-            GradientDrawable bubble=new GradientDrawable();bubble.setColor(Color.rgb(239,237,255));bubble.setCornerRadius(dp(12));
+            GradientDrawable bubble=new GradientDrawable();bubble.setColor(Color.rgb(43, 38, 62));bubble.setCornerRadius(dp(12));
             number.setBackground(bubble);number.setPadding(dp(10),dp(8),dp(10),dp(8));
             top.addView(number,new LinearLayout.LayoutParams(dp(42),dp(40)));
             LinearLayout titleBox=new LinearLayout(this);titleBox.setOrientation(LinearLayout.VERTICAL);
@@ -190,7 +200,7 @@ public class MainActivity extends Activity {
             card.addView(top);
             TextView state=label("STATUS  •  "+m.status.toUpperCase(java.util.Locale.ROOT),10,TEAL,true);
             state.setPadding(0,dp(10),0,dp(5));card.addView(state);
-            Button open=actionButton("OPEN MODULE  →",Color.rgb(239,237,255),ACCENT);
+            Button open=actionButton("OPEN MODULE  →",Color.rgb(43, 38, 62),ACCENT);
             open.setOnClickListener(v -> showModule(m));
             card.addView(open);
             moduleList.addView(card,bottom(10));
@@ -213,7 +223,7 @@ public class MainActivity extends Activity {
         LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(15),dp(14),dp(15),dp(14));
         GradientDrawable bg=new GradientDrawable();bg.setColor(color);bg.setCornerRadius(dp(radius));
-        bg.setStroke(dp(1),Color.rgb(231,235,243));box.setBackground(bg);return box;
+        bg.setStroke(dp(1),STROKE);box.setBackground(bg);return box;
     }
     private Button actionButton(String text,int background,int foreground) {
         Button b=new Button(this);b.setText(text);b.setTextSize(11);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
@@ -222,7 +232,7 @@ public class MainActivity extends Activity {
         return b;
     }
     private void addWideAction(LinearLayout parent,String title,String url) {
-        Button b=actionButton(title,Color.rgb(245,247,251),INK);b.setOnClickListener(v->open(url));
+        Button b=actionButton(title,SURFACE,INK);b.setOnClickListener(v->open(url));
         LinearLayout.LayoutParams lp=bottom(6);parent.addView(b,lp);
     }
     private TextView space(int h) { TextView v=new TextView(this);v.setHeight(dp(h));return v; }
