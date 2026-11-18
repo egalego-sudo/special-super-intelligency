@@ -1,10 +1,55 @@
 """Provenance-preserving next-token training and evaluation pipeline."""
 from __future__ import annotations
 
+import hashlib
 import math
+from collections import Counter
 
 from .dataset import TextExample
 from .tokenizer import ByteTokenizer
+
+
+def audit_provenance(examples, *, approved_licenses):
+    """Require an explicit human-approved license allowlist and hash source records."""
+    if not isinstance(examples, list) or not examples:
+        raise ValueError("At least one provenance-tagged example is required.")
+    if (not isinstance(approved_licenses, (list, tuple, set))
+            or not approved_licenses):
+        raise ValueError("An explicit approved_licenses allowlist is required.")
+    approved = {
+        license_name.strip()
+        for license_name in approved_licenses
+        if isinstance(license_name, str) and license_name.strip()
+    }
+    if not approved:
+        raise ValueError("approved_licenses must contain non-empty license identifiers.")
+
+    license_counts = Counter()
+    source_counts = Counter()
+    digest = hashlib.sha256()
+    for index, example in enumerate(examples, 1):
+        if not isinstance(example, TextExample):
+            raise TypeError(f"Dataset item {index} must be a TextExample.")
+        if not all(isinstance(value, str) and value.strip()
+                   for value in (example.text, example.source, example.license)):
+            raise ValueError(f"Dataset item {index} is missing provenance metadata.")
+        if example.license.strip() not in approved:
+            raise ValueError(
+                f"Dataset item {index} uses unapproved license: {example.license}."
+            )
+        license_counts[example.license.strip()] += 1
+        source_counts[example.source.strip()] += 1
+        for value in (example.text, example.source, example.license):
+            digest.update(value.strip().encode("utf-8"))
+            digest.update(b"\\0")
+
+    return {
+        "records": len(examples),
+        "approved_licenses": sorted(approved),
+        "license_counts": dict(sorted(license_counts.items())),
+        "source_counts": dict(sorted(source_counts.items())),
+        "dataset_sha256": digest.hexdigest(),
+    }
 
 
 def build_next_token_samples(examples, tokenizer, max_sequence_length):
@@ -32,10 +77,11 @@ def build_next_token_samples(examples, tokenizer, max_sequence_length):
     return samples
 
 
-def train_from_examples(model, examples, *, tokenizer=None, epochs=1,
-                        learning_rate=0.001, max_grad_norm=1.0,
+def train_from_examples(model, examples, *, approved_licenses, tokenizer=None,
+                        epochs=1, learning_rate=0.001, max_grad_norm=1.0,
                         weight_decay=0.01):
     """Train a byte-level decoder while retaining provenance in source records."""
+    audit_provenance(examples, approved_licenses=approved_licenses)
     tokenizer = tokenizer or ByteTokenizer()
     if model.vocab_size != tokenizer.vocab_size:
         raise ValueError("Model vocabulary size must match tokenizer vocabulary size.")
@@ -49,8 +95,9 @@ def train_from_examples(model, examples, *, tokenizer=None, epochs=1,
     )
 
 
-def evaluate_examples(model, examples, *, tokenizer=None):
-    """Return held-out next-token loss, perplexity, accuracy and token count."""
+def evaluate_examples(model, examples, *, approved_licenses, tokenizer=None):
+    """Return held-out next-token metrics after source/license allowlist audit."""
+    audit_provenance(examples, approved_licenses=approved_licenses)
     tokenizer = tokenizer or ByteTokenizer()
     if model.vocab_size != tokenizer.vocab_size:
         raise ValueError("Model vocabulary size must match tokenizer vocabulary size.")
@@ -115,6 +162,7 @@ def fit_with_validation(model, training_examples, validation_examples, *,
                         weight_decay=0.01, optimizer="adamw", seed=0,
                         checkpoint_path=None, schedule="constant",
                         warmup_epochs=0, minimum_learning_rate=0.0,
+                        approved_licenses,
                         patience=None, min_delta=0.0):
     """Train reproducibly, select the lowest-validation-loss epoch and restore it."""
     import copy
@@ -132,6 +180,12 @@ def fit_with_validation(model, training_examples, validation_examples, *,
     if type(min_delta) not in (int, float) or not math.isfinite(min_delta) or min_delta < 0:
         raise ValueError("min_delta must be finite and non-negative.")
 
+    training_provenance = audit_provenance(
+        training_examples, approved_licenses=approved_licenses
+    )
+    validation_provenance = audit_provenance(
+        validation_examples, approved_licenses=approved_licenses
+    )
     training_samples = build_next_token_samples(
         training_examples, tokenizer, model.max_sequence_length
     )
@@ -163,7 +217,8 @@ def fit_with_validation(model, training_examples, validation_examples, *,
             optimizer=optimizer,
         )
         validation_metrics = evaluate_examples(
-            model, validation_examples, tokenizer=tokenizer
+            model, validation_examples, tokenizer=tokenizer,
+            approved_licenses=approved_licenses,
         )
         record = {
             "epoch": epoch,
@@ -200,4 +255,6 @@ def fit_with_validation(model, training_examples, validation_examples, *,
         "stopped_early": stopped_early,
         "training_samples": len(training_samples),
         "validation_samples": len(validation_samples),
+        "training_dataset_sha256": training_provenance["dataset_sha256"],
+        "validation_dataset_sha256": validation_provenance["dataset_sha256"],
     }
