@@ -291,7 +291,8 @@ class DecoderLanguageModel:
 
 
     def train(self, samples, *, epochs=10, learning_rate=0.001,
-              max_grad_norm=1.0, weight_decay=0.01, optimizer="adamw"):
+              max_grad_norm=1.0, weight_decay=0.01, optimizer="adamw",
+              batch_size=None):
         """Train every decoder parameter with reverse-mode autodiff.
 
         Select AdamW for adaptive optimization or SGD for gradient verification.
@@ -305,24 +306,37 @@ class DecoderLanguageModel:
             raise ValueError("epochs must be a positive integer.")
         if optimizer not in ("adamw", "sgd"):
             raise ValueError("optimizer must be 'adamw' or 'sgd'.")
+        if batch_size is not None and (type(batch_size) is not int or batch_size <= 0):
+            raise ValueError("batch_size must be a positive integer when provided.")
         for name, value in (("learning_rate", learning_rate),
                             ("max_grad_norm", max_grad_norm)):
             if (type(value) not in (int, float) or not math.isfinite(value)
                     or value <= 0):
                 raise ValueError(f"{name} must be positive and finite.")
         validated = []
-        for context, target in samples:
-            self._encode(context)
+        for sample in samples:
+            if not isinstance(sample, (tuple, list)) or len(sample) not in (2, 3):
+                raise ValueError("Each sample must be (context, target) or (context, mask, target).")
+            if len(sample) == 2:
+                context, target = sample
+                attention_mask = None
+            else:
+                context, attention_mask, target = sample
+            self._encode(context, attention_mask)
             if type(target) is not int or not 0 <= target < self.vocab_size:
                 raise ValueError("target token must be within the vocabulary.")
-            validated.append((list(context), target))
+            mask = ([True] * len(context) if attention_mask is None
+                    else list(attention_mask))
+            validated.append((list(context), mask, target))
 
         def measure_loss():
             total_loss = 0.0
-            for context, target in validated:
-                logits = self.forward(context)[-1]
-                peak = max(logits)
-                exps = [math.exp(value - peak) for value in logits]
+            for context, mask, target in validated:
+                logits = self.forward(context, attention_mask=mask)
+                final_position = max(index for index, valid in enumerate(mask) if valid)
+                values = logits[final_position]
+                peak = max(values)
+                exps = [math.exp(value - peak) for value in values]
                 total_loss -= math.log(max(exps[target] / sum(exps), 1e-300))
             return total_loss / len(validated)
 
@@ -350,30 +364,37 @@ class DecoderLanguageModel:
                 weight_decay=weight_decay,
             )
         initial_loss = measure_loss()
+        effective_batch_size = batch_size or len(validated)
         for _ in range(epochs):
-            for parameter in parameters:
-                parameter.grad = 0.0
-            loss = Value(0.0)
-            for context, target in validated:
-                logits = tracked.forward(context)[-1]
-                peak = max(logits, key=lambda item: item.data)
-                exps = [_exp(value - peak) for value in logits]
-                total = sum(exps)
-                loss = loss - (exps[target] / total).log() / len(validated)
-            loss.backward()
-            if optimizer_instance is not None:
-                optimizer_instance.step(parameters)
-            else:
-                gradient_norm = math.sqrt(sum(item.grad ** 2 for item in parameters))
-                if not math.isfinite(gradient_norm):
-                    raise ArithmeticError("Non-finite gradient detected.")
-                clip_scale = min(
-                    1.0, max_grad_norm / max(gradient_norm, 1e-12)
-                )
+            for batch_start in range(0, len(validated), effective_batch_size):
+                minibatch = validated[batch_start:batch_start + effective_batch_size]
                 for parameter in parameters:
-                    parameter.data -= learning_rate * clip_scale * parameter.grad
-                    if not math.isfinite(parameter.data):
-                        raise ArithmeticError("Non-finite SGD parameter update detected.")
+                    parameter.grad = 0.0
+                loss = Value(0.0)
+                for context, mask, target in minibatch:
+                    logits = tracked.forward(context, attention_mask=mask)
+                    final_position = max(
+                        index for index, valid in enumerate(mask) if valid
+                    )
+                    values = logits[final_position]
+                    peak = max(values, key=lambda item: item.data)
+                    exps = [_exp(value - peak) for value in values]
+                    total = sum(exps)
+                    loss = loss - (exps[target] / total).log() / len(minibatch)
+                loss.backward()
+                if optimizer_instance is not None:
+                    optimizer_instance.step(parameters)
+                else:
+                    gradient_norm = math.sqrt(sum(item.grad ** 2 for item in parameters))
+                    if not math.isfinite(gradient_norm):
+                        raise ArithmeticError("Non-finite gradient detected.")
+                    clip_scale = min(
+                        1.0, max_grad_norm / max(gradient_norm, 1e-12)
+                    )
+                    for parameter in parameters:
+                        parameter.data -= learning_rate * clip_scale * parameter.grad
+                        if not math.isfinite(parameter.data):
+                            raise ArithmeticError("Non-finite SGD parameter update detected.")
 
         # Copy the learned scalar values back to the ordinary inference model.
         destination_groups = parameter_groups(self)
