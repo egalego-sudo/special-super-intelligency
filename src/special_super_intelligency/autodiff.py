@@ -88,6 +88,19 @@ class Value:
         out._backward = backward
         return out
 
+    def log(self):
+        if self.data <= 0:
+            raise ValueError("log requires a positive value.")
+        out = Value(math.log(self.data), (self,), "log")
+        def backward():
+            self.grad += out.grad / self.data
+        out._backward = backward
+        return out
+
+    def __lt__(self, other):
+        other = self._coerce(other)
+        return self.data < other.data
+
     def backward(self):
         """Accumulate gradients from this scalar through its full graph."""
         topo = []
