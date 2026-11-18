@@ -23,17 +23,17 @@
 | 15 | Add efficient inference context handling and KV cache | COMPLETE | Per-layer incremental key/value cache, one-token forward path, rolling context rebuild at sequence limit; cached logits match full recomputation; overflow and malformed-cache tests; CI 142 passed |
 | 16 | Add performance profiling and memory/throughput baselines | COMPLETE | `benchmark.py` reports hardware/Python, model parameter count, cached vs full-recompute median latency, tokens/sec and peak Python allocation; asserts output equivalence without imposing noisy speed thresholds; CI 145 passed |
 | 17 | Add broad reasoning, coding, factuality and robustness benchmark harness | COMPLETE | `benchmarks.py` scores reasoning/coding exact-match, factuality support labels plus evidence-ID citation precision/coverage, and paired robustness; immutable dataset hashes and strict category/metric/sample-count baseline comparison; licensed synthetic smoke bundle; regression CI 164 passed |
-| 18 | Add adversarial, prompt-injection and unsafe-tool-use evaluation | IN PROGRESS | Threat model documented; tests verify prompt injection cannot authorize high-risk tools, sandbox image/container flag injection rejection, no-network/read-only/non-root isolation, bounded resources and fail-closed behavior; final CodeQL and full smoke validation pending |
-| 19 | Run multiple-seed experiments and preserve full experiment provenance | NOT STARTED | Repeated runs, variance report and artifact hashes |
+| 18 | Add adversarial, prompt-injection and unsafe-tool-use evaluation | COMPLETE | Threat model documented; prompt-injection approval bypass tests, sandbox image/container flag injection rejection, no-network/read-only/non-root isolation, bounded resources and fail-closed tests; CI 164 passed and Ruff passed. Formal penetration testing remains NOT VERIFIED |
+| 19 | Run multiple-seed experiments and preserve full experiment provenance | IN PROGRESS | `run_decoder_seed_sweep` runs repeatable seeds, reports mean/sample standard deviation/min/max, records separate train/validation source/license/dataset hashes, hashes the report and atomically persists JSON; CI validation pending |
 | 20 | Independent final review and fair comparison against selected public baselines | NOT STARTED | All applicable checks green; disclose compute/data limits; no superiority claim without evidence |
 
 ## Verified progress
 
-**85% — 17 of 20 Phase 2 packages complete.**
+**90% — 18 of 20 Phase 2 packages complete.**
 
 The current implementation is an early research prototype. It now includes a dependency-free reverse-mode scalar autodiff engine and a reference trainer that propagates gradients through embeddings, causal attention projections, attention output, feed-forward weights and the vocabulary projection. A deterministic tiny-corpus test verifies loss reduction and updates to embedding, attention and FFN weights; a full-model parameter gradient is checked against finite differences. This is a correctness milestone, not evidence of broad language competence or useful-scale training.
 
-Current GitHub CI on commit `90e1761ce3d562efb0330661047e4c7f40cf3730`: 164 pytest tests passed; Ruff passed. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI. Android emulator smoke previously exposed `UnknownHostException` for `raw.githubusercontent.com`; the workflow now records remote sync as NOT VERIFIED when emulator DNS is unavailable, while independently checking the remote JSON from the runner and continuing UI/offline tests.
+Current GitHub CI on commit `b4f8085765ea75d04c6adf08e6c60a9e453075d9`: 164 pytest tests passed; Ruff passed. Multi-seed experiment work is in progress on the current branch and awaits its own CI run. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI. Android emulator smoke previously exposed `UnknownHostException` for `raw.githubusercontent.com`; the workflow now records remote sync as NOT VERIFIED when emulator DNS is unavailable, while independently checking the remote JSON from the runner and continuing UI/offline tests.
 
 ## Non-claims and release gates
 
