@@ -46,17 +46,20 @@ jobs:
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
       - name: Boot emulator
         run: |
-          emulator -avd ssi-api35 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel auto > /tmp/ssi-emulator.log 2>&1 &
-          timeout 120 adb wait-for-device
+          test -x "$ANDROID_HOME/emulator/emulator"
+          test -x "$ANDROID_HOME/platform-tools/adb"
+          "$ANDROID_HOME/platform-tools/adb" start-server
+          "$ANDROID_HOME/emulator/emulator" -avd ssi-api35 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel auto > /tmp/ssi-emulator.log 2>&1 &
+          timeout 120 "$ANDROID_HOME/platform-tools/adb" wait-for-device
           for i in $(seq 1 180); do
-            BOOTED="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            BOOTED="$("$ANDROID_HOME/platform-tools/adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
             if [ "$BOOTED" = "1" ]; then break; fi
             sleep 2
           done
-          test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1"
-          adb shell settings put global window_animation_scale 0
-          adb shell settings put global transition_animation_scale 0
-          adb shell settings put global animator_duration_scale 0
+          test "$("$ANDROID_HOME/platform-tools/adb" shell getprop sys.boot_completed | tr -d '\r')" = "1"
+          "$ANDROID_HOME/platform-tools/adb" shell settings put global window_animation_scale 0
+          "$ANDROID_HOME/platform-tools/adb" shell settings put global transition_animation_scale 0
+          "$ANDROID_HOME/platform-tools/adb" shell settings put global animator_duration_scale 0
       - name: Install and launch app
         run: |
           adb install app/build/outputs/apk/debug/app-debug.apk
