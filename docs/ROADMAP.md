@@ -33,7 +33,8 @@ This roadmap prioritizes verifiable foundations over unsupported claims.
 - [x] Add explicit in-memory knowledge retrieval with provenance
 - [ ] Add durable, encrypted, user-controlled memory and retention controls
 - [ ] Add verifier/critic workflows with evidence tracking
-- [ ] Add a genuinely isolated code-execution sandbox; current tool registry is only an approval gate
+- [x] Add an optional Docker sandbox runner with restrictive defaults and immutable image pinning
+- [ ] Verify real Docker integration on a hardened Linux host; use a VM/dedicated sandbox for highly hostile workloads
 
 ## Phase 4 — Training and improvement
 - [x] Build basic dataset validation and metadata audit
