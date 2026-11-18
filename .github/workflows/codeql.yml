@@ -14,8 +14,22 @@ permissions:
   actions: read
 
 jobs:
-  analyze:
-    name: Analyze Python and Android Java/Kotlin
+  analyze-python:
+    name: Analyze Python
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Initialize CodeQL for Python
+        uses: github/codeql-action/init@v4
+        with:
+          languages: python
+          build-mode: none
+      - name: Perform Python CodeQL analysis
+        uses: github/codeql-action/analyze@v4
+
+  analyze-android:
+    name: Analyze Android Java/Kotlin
     runs-on: ubuntu-latest
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
@@ -41,12 +55,12 @@ jobs:
         run: |
           yes | sdkmanager --licenses
           sdkmanager "platforms;android-35" "build-tools;35.0.0"
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+      - name: Initialize CodeQL for Android
+        uses: github/codeql-action/init@v4
         with:
-          languages: python, java-kotlin
+          languages: java-kotlin
           build-mode: manual
-      - name: Build Android and Python project for CodeQL tracing
+      - name: Build Android app for CodeQL tracing
         run: gradle --no-daemon :app:assembleDebug
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v3
+      - name: Perform Android CodeQL analysis
+        uses: github/codeql-action/analyze@v4
