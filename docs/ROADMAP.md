@@ -34,7 +34,8 @@ This roadmap prioritizes verifiable foundations over unsupported claims.
 - [ ] Add durable, encrypted, user-controlled memory and retention controls
 - [ ] Add verifier/critic workflows with evidence tracking
 - [x] Add an optional Docker sandbox runner with restrictive defaults and immutable image pinning
-- [ ] Verify real Docker integration on a hardened Linux host; use a VM/dedicated sandbox for highly hostile workloads
+- [x] Verify Docker integration in GitHub Actions for non-root, read-only root, no-network, and temporary storage boundaries
+- [ ] Assess VM/dedicated sandbox isolation for highly hostile workloads
 
 ## Phase 4 — Training and improvement
 - [x] Build basic dataset validation and metadata audit
