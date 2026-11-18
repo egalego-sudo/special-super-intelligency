@@ -60,10 +60,10 @@ Each of the 20 work packages below is worth 5 percentage points. A package is co
 | 02 | Implement black background, white text, and dark surfaces | COMPLETE | Commit `08e78c920afe1235b0a8fdebfde1f51068a7ba22` |
 | 03 | Restrict remote module document links to this repository's approved docs paths | COMPLETE | Commit `6077e62cd45eaf44bbef914be4a0ead447afcfc9` |
 | 04 | Run Python regression suite and lint on the current code checkpoint | COMPLETE | CI run `44327239506`: 65 passed; Ruff passed |
-| 05 | Build Android debug APK on the current code checkpoint | COMPLETE | Android APK run `44327225587`: success on app code SHA `6077e62` |
-| 06 | Complete CodeQL analysis including Android Java/Kotlin source | IN PROGRESS | Workflow extended to `python, java-kotlin` in commit `2a5d137`; CodeQL run `44327758060` running |
-| 07 | Confirm APK artifact is uploaded and downloadable | COMPLETE | Artifact `14436488817` downloaded successfully |
-| 08 | Inspect APK package metadata, structure, and signing state | COMPLETE | APK package `com.bittupandit.ssi`, version `1.1` / code `2`; ZIP structure valid; debug certificate verified |
+| 05 | Build Android debug APK on the current code checkpoint | COMPLETE | Android APK run `44328588021`: success on version 1.2 code SHA `4d5ed27` |
+| 06 | Complete CodeQL analysis including Android Java/Kotlin source | COMPLETE | CodeQL run `44328599314`: Python and Android Java/Kotlin jobs both succeeded on SHA `4d5ed27` |
+| 07 | Confirm APK artifact is uploaded and downloadable | COMPLETE | Version 1.2 artifact `14436624493` downloaded successfully |
+| 08 | Inspect APK package metadata, structure, and signing state | COMPLETE | APK package `com.bittupandit.ssi`, version `1.2` / code `3`; ZIP structure valid; debug signature verified |
 | 09 | Review final Java source and remote-config failure paths | COMPLETE | Dark palette, 14-card fallback, fail-closed document URL allowlist, and sync error fallback reviewed |
 | 10 | Install APK on a physical Android device | NOT VERIFIED | Device access unavailable in GitHub CI |
 | 11 | Verify app launch and dark theme on a physical device | NOT VERIFIED | Device access unavailable in GitHub CI |
@@ -77,5 +77,7 @@ Each of the 20 work packages below is worth 5 percentage points. A package is co
 | 19 | Complete independent diff review and update evidence | PENDING | — |
 | 20 | Re-check PR state and publish final verified report | PENDING | — |
 
-**Verified progress at this checkpoint: 40% (8 of 20 packages).**  
+**Verified progress at this checkpoint: 45% (9 of 20 packages).**  
 This is the Android control-app update scope only. The full AI research system remains a separate, much larger unfinished mission. No merge, production deployment, or release publication is authorized by this checkpoint.
+
+**CodeQL failure analysis and correction:** The first combined scan failed because CodeQL's `manual` build mode is not supported by the Python extractor. A subsequent Android autobuild exposed a Gradle mismatch (Android Gradle Plugin 8.6.1 requires Gradle 8.7; the autobuilder selected 8.6). The workflow was split into separate Python (`build-mode: none`) and Android Java/Kotlin (`build-mode: manual`) jobs; the Android job installs Gradle 8.7 and the Android SDK. CodeQL Action was upgraded to v4. Both jobs passed on the version 1.2 source checkpoint. These were real failures and were not marked successful until the corrected workflow passed.
