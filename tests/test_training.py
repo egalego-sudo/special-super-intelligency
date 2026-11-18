@@ -149,3 +149,20 @@ def test_fit_rejects_invalid_early_stopping_configuration():
     model = DecoderLanguageModel(vocab_size=256, width=2, heads=1, layers=1)
     with pytest.raises(ValueError, match="patience"):
         model.fit(training, validation, epochs=2, patience=0)
+
+
+def test_tiny_corpus_experiment_measures_overfit_and_heldout_generalization():
+    import math
+
+    from special_super_intelligency.experiment import run_decoder_tiny_corpus_experiment
+
+    report = run_decoder_tiny_corpus_experiment(epochs=10, seed=131)
+    assert report["synthetic_only"] is True
+    assert report["training_loss_after"] < report["training_loss_before"]
+    assert math.isfinite(report["validation_loss_before"])
+    assert math.isfinite(report["validation_loss_after"])
+    assert math.isfinite(report["validation_perplexity"])
+    assert 0.0 <= report["validation_accuracy"] <= 1.0
+    assert math.isfinite(report["generalization_gap"])
+    assert report["training_tokens"] == 3
+    assert report["validation_tokens"] == 3
