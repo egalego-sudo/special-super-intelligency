@@ -246,3 +246,85 @@ class DecoderLanguageModel:
                         learning_rate * gradients[row][column]
                     )
         return initial_loss, calculate_loss()
+
+
+    def train(self, samples, *, epochs=10, learning_rate=0.01,
+              max_grad_norm=1.0):
+        """Train every decoder parameter with reverse-mode autodiff and SGD.
+
+        Samples are (context token IDs, target token ID). This deliberately
+        small reference trainer favors correctness and inspectability over speed.
+        """
+        if not isinstance(samples, list) or not samples:
+            raise ValueError("At least one training sample is required.")
+        if type(epochs) is not int or epochs <= 0:
+            raise ValueError("epochs must be a positive integer.")
+        for name, value in (("learning_rate", learning_rate),
+                            ("max_grad_norm", max_grad_norm)):
+            if (type(value) not in (int, float) or not math.isfinite(value)
+                    or value <= 0):
+                raise ValueError(f"{name} must be positive and finite.")
+
+        validated = []
+        for context, target in samples:
+            self._encode(context)
+            if type(target) is not int or not 0 <= target < self.vocab_size:
+                raise ValueError("target token must be within the vocabulary.")
+            validated.append((list(context), target))
+
+        def measure_loss():
+            total_loss = 0.0
+            for context, target in validated:
+                logits = self.forward(context)[-1]
+                peak = max(logits)
+                exps = [math.exp(value - peak) for value in logits]
+                total_loss -= math.log(max(exps[target] / sum(exps), 1e-300))
+            return total_loss / len(validated)
+
+        def parameter_groups(model):
+            groups = [("embedding", model.embedding),
+                      ("output_projection", model.output_projection)]
+            for index, block in enumerate(model.blocks):
+                for name in ("query", "key", "value", "attention_output",
+                             "ffn_in", "ffn_out"):
+                    groups.append((f"blocks.{index}.{name}", getattr(block, name)))
+            return groups
+
+        initial_loss = measure_loss()
+        for _ in range(epochs):
+            tracked = copy.deepcopy(self)
+            for _, matrix in parameter_groups(tracked):
+                for row_index, row in enumerate(matrix):
+                    matrix[row_index] = [Value(value) for value in row]
+
+            loss = Value(0.0)
+            for context, target in validated:
+                logits = tracked.forward(context)[-1]
+                peak = max(logits, key=lambda item: item.data)
+                exps = [_exp(value - peak) for value in logits]
+                total = sum(exps)
+                loss = loss - (exps[target] / total).log() / len(validated)
+            loss.backward()
+
+            original_groups = parameter_groups(self)
+            tracked_groups = parameter_groups(tracked)
+            gradient_norm_sq = 0.0
+            for (_, original), (_, learned) in zip(original_groups, tracked_groups):
+                for row in learned:
+                    for parameter in row:
+                        gradient_norm_sq += parameter.grad ** 2
+            gradient_norm = math.sqrt(gradient_norm_sq)
+            if not math.isfinite(gradient_norm):
+                raise ArithmeticError("Non-finite gradient detected.")
+            clip_scale = min(1.0, max_grad_norm / max(gradient_norm, 1e-12))
+
+            for (_, original), (_, learned) in zip(original_groups, tracked_groups):
+                for row_index, row in enumerate(original):
+                    for column_index, value in enumerate(row):
+                        gradient = learned[row_index][column_index].grad
+                        updated = value - learning_rate * clip_scale * gradient
+                        if not math.isfinite(updated):
+                            raise ArithmeticError("Non-finite parameter update detected.")
+                        row[column_index] = updated
+
+        return initial_loss, measure_loss()
