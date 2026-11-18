@@ -143,3 +143,21 @@ def compare_benchmarks(candidate, baseline):
         if metric is not None:
             deltas[category] = candidate_metrics[metric] - baseline_metrics[metric]
     return {"dataset_sha256": candidate["dataset_sha256"], "score_deltas": deltas}
+
+
+def load_benchmark_bundle(path):
+    """Load a versioned JSON benchmark bundle with cases and baseline outputs."""
+    from pathlib import Path
+
+    source = Path(path)
+    size = source.stat().st_size
+    if size <= 0 or size > 10 * 1024 * 1024:
+        raise ValueError("Benchmark bundle size is invalid.")
+    bundle = json.loads(source.read_text(encoding="utf-8"))
+    if not isinstance(bundle, dict) or set(bundle) != {
+        "manifest", "cases", "baseline_predictions"
+    }:
+        raise ValueError("Benchmark bundle structure is invalid.")
+    if not isinstance(bundle["baseline_predictions"], dict):
+        raise ValueError("Benchmark baseline predictions must be an object.")
+    return bundle
