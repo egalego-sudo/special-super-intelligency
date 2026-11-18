@@ -53,10 +53,6 @@ def test_evaluation_rejects_empty_text_pairs():
     with pytest.raises(ValueError, match="no next-token"):
         evaluate_examples(model, [TextExample("x", "source", "CC0")])
 
-from special_super_intelligency.dataset import TextExample
-from special_super_intelligency.transformer import DecoderLanguageModel
-
-
 def test_fit_selects_and_restores_best_validation_checkpoint(tmp_path):
     training = [
         TextExample("abab", "author training fixture", "CC0"),
