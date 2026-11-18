@@ -40,3 +40,19 @@ def test_rejects_non_finite_input():
 def test_rejects_empty_training_data():
     with pytest.raises(ValueError):
         TinyMLP(1, 2, 1).train([])
+
+
+def test_checkpoint_round_trip_preserves_predictions(tmp_path):
+    model = TinyMLP(2, 3, 1, seed=19)
+    model.train([([0.0, 0.0], [0.0]), ([1.0, 1.0], [1.0])], epochs=10)
+    checkpoint = tmp_path / "model.json"
+    model.save_checkpoint(str(checkpoint))
+    restored = TinyMLP.load_checkpoint(str(checkpoint))
+    assert restored.predict([0.3, 0.7]) == model.predict([0.3, 0.7])
+
+
+def test_checkpoint_rejects_unknown_version(tmp_path):
+    checkpoint = tmp_path / "bad.json"
+    checkpoint.write_text('{"format_version": 999}', encoding="utf-8")
+    with pytest.raises(ValueError):
+        TinyMLP.load_checkpoint(str(checkpoint))
