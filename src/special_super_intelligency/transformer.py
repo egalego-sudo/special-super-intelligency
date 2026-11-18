@@ -223,18 +223,99 @@ class DecoderLanguageModel:
         total = sum(exponentials)
         return [value / total for value in exponentials]
 
-    def generate(self, prompt, *, max_new_tokens=1):
-        """Greedy autoregressive decoding; outputs are untrained until trained."""
+    def _sampling_probabilities(self, logits, *, temperature=1.0,
+                                top_k=None, top_p=1.0):
+        if (type(temperature) not in (int, float) or not math.isfinite(temperature)
+                or temperature <= 0):
+            raise ValueError("temperature must be positive and finite.")
+        if top_k is not None and (
+            type(top_k) is not int or not 1 <= top_k <= self.vocab_size
+        ):
+            raise ValueError("top_k must be an integer between 1 and vocab_size.")
+        if (type(top_p) not in (int, float) or not math.isfinite(top_p)
+                or not 0 < top_p <= 1):
+            raise ValueError("top_p must be in the interval (0, 1].")
+
+        scaled = [value / temperature for value in logits]
+        ranked = sorted(range(self.vocab_size), key=lambda index: scaled[index],
+                        reverse=True)
+        if top_k is not None:
+            ranked = ranked[:top_k]
+        peak = max(scaled[index] for index in ranked)
+        weights = {index: math.exp(scaled[index] - peak) for index in ranked}
+        denominator = sum(weights.values())
+        probabilities = {index: value / denominator for index, value in weights.items()}
+
+        if top_p < 1.0:
+            nucleus = []
+            cumulative = 0.0
+            for index in ranked:
+                nucleus.append(index)
+                cumulative += probabilities[index]
+                if cumulative >= top_p:
+                    break
+            probabilities = {index: probabilities[index] for index in nucleus}
+
+        total = sum(probabilities.values())
+        result = [0.0] * self.vocab_size
+        for index, probability in probabilities.items():
+            result[index] = probability / total
+        return result
+
+    def sample_next_token(self, token_ids, *, temperature=1.0,
+                          top_k=None, top_p=1.0, seed=None):
+        """Sample one next token using temperature, top-k and nucleus filtering."""
+        import random
+
+        if seed is not None and type(seed) is not int:
+            raise ValueError("seed must be an integer or None.")
+        logits = self.forward(token_ids)[-1]
+        probabilities = self._sampling_probabilities(
+            logits, temperature=temperature, top_k=top_k, top_p=top_p
+        )
+        draw = random.Random(seed).random()
+        cumulative = 0.0
+        for index, probability in enumerate(probabilities):
+            cumulative += probability
+            if draw < cumulative:
+                return index
+        return max(range(self.vocab_size), key=lambda index: probabilities[index])
+
+    def generate(self, prompt, *, max_new_tokens=1, temperature=None,
+                 top_k=None, top_p=1.0, seed=None):
+        """Greedy decoding by default; optionally use seeded filtered sampling."""
+        import random
+
         if type(max_new_tokens) is not int or max_new_tokens < 0:
             raise ValueError("max_new_tokens must be a non-negative integer.")
         if not isinstance(prompt, list) or not prompt:
             raise ValueError("prompt must be a non-empty list.")
+        if seed is not None and type(seed) is not int:
+            raise ValueError("seed must be an integer or None.")
+        greedy = temperature is None and top_k is None and top_p == 1.0
+        rng = random.Random(seed)
         generated = list(prompt)
         for _ in range(max_new_tokens):
             context = generated[-self.max_sequence_length:]
-            probabilities = self.next_token_probabilities(context)
-            generated.append(max(range(self.vocab_size),
-                                 key=lambda index: probabilities[index]))
+            logits = self.forward(context)[-1]
+            if greedy:
+                next_token = max(range(self.vocab_size), key=lambda index: logits[index])
+            else:
+                probabilities = self._sampling_probabilities(
+                    logits,
+                    temperature=1.0 if temperature is None else temperature,
+                    top_k=top_k,
+                    top_p=top_p,
+                )
+                draw = rng.random()
+                cumulative = 0.0
+                next_token = self.vocab_size - 1
+                for index, probability in enumerate(probabilities):
+                    cumulative += probability
+                    if draw < cumulative:
+                        next_token = index
+                        break
+            generated.append(next_token)
         return generated
 
     def train_output_head(self, samples, *, epochs=100, learning_rate=0.1):
