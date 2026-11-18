@@ -1,9 +1,15 @@
 from special_super_intelligency.attention import causal_self_attention
 
-import pytest
-
 
 IDENTITY = [[1.0, 0.0], [0.0, 1.0]]
+
+
+def assert_raises(exception, callback):
+    try:
+        callback()
+    except exception:
+        return
+    raise AssertionError(f"Expected {exception.__name__}.")
 
 
 def test_attention_returns_same_sequence_shape():
@@ -23,15 +29,18 @@ def test_attention_is_causal():
 
 
 def test_attention_rejects_empty_sequence():
-    with pytest.raises(ValueError):
-        causal_self_attention([], IDENTITY, IDENTITY, IDENTITY)
+    assert_raises(ValueError, lambda: causal_self_attention([], IDENTITY, IDENTITY, IDENTITY))
 
 
 def test_attention_rejects_inconsistent_width():
-    with pytest.raises(ValueError):
-        causal_self_attention([[1.0, 0.0], [1.0]], IDENTITY, IDENTITY, IDENTITY)
+    assert_raises(
+        ValueError,
+        lambda: causal_self_attention([[1.0, 0.0], [1.0]], IDENTITY, IDENTITY, IDENTITY),
+    )
 
 
 def test_attention_rejects_bad_projection_shape():
-    with pytest.raises(ValueError):
-        causal_self_attention([[1.0, 0.0]], [[1.0]], IDENTITY, IDENTITY)
+    assert_raises(
+        ValueError,
+        lambda: causal_self_attention([[1.0, 0.0]], [[1.0]], IDENTITY, IDENTITY),
+    )
