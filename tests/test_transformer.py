@@ -179,3 +179,50 @@ def test_full_decoder_gradient_matches_finite_difference():
     model.train(samples, epochs=1, learning_rate=1e-5, max_grad_norm=1e6, weight_decay=0.0, optimizer="sgd")
     learned_gradient = (original - model.blocks[0].ffn_in[0][0]) / 1e-5
     assert learned_gradient == pytest.approx(numeric_gradient, rel=2e-3, abs=2e-4)
+
+
+def test_sampling_filters_top_k_and_normalizes_probabilities():
+    model = DecoderLanguageModel(vocab_size=12, width=4, heads=2, layers=1, seed=139)
+    logits = model.forward([1, 2])[-1]
+    probabilities = model._sampling_probabilities(logits, temperature=0.8, top_k=3)
+    assert sum(probabilities) == pytest.approx(1.0)
+    assert sum(value > 0 for value in probabilities) <= 3
+
+
+def test_nucleus_sampling_keeps_minimum_probability_mass():
+    model = DecoderLanguageModel(vocab_size=10, width=4, heads=2, layers=1, seed=149)
+    logits = model.forward([1, 2])[-1]
+    probabilities = model._sampling_probabilities(logits, top_p=0.7)
+    assert sum(probabilities) == pytest.approx(1.0)
+    assert 1 <= sum(value > 0 for value in probabilities) <= 10
+
+
+def test_seeded_sampling_and_generation_are_reproducible():
+    model = DecoderLanguageModel(vocab_size=12, width=4, heads=2, layers=1, seed=151)
+    first = model.sample_next_token([1, 2], temperature=0.9, top_k=5, seed=17)
+    second = model.sample_next_token([1, 2], temperature=0.9, top_k=5, seed=17)
+    assert first == second
+    generated_a = model.generate([1, 2], max_new_tokens=5, temperature=0.9, top_p=0.9, seed=19)
+    generated_b = model.generate([1, 2], max_new_tokens=5, temperature=0.9, top_p=0.9, seed=19)
+    assert generated_a == generated_b
+    assert len(generated_a) == 7
+
+
+def test_default_generation_remains_greedy():
+    model = DecoderLanguageModel(vocab_size=8, width=4, heads=2, layers=1, seed=157)
+    expected = max(range(8), key=lambda index: model.next_token_probabilities([1])[index])
+    assert model.generate([1], max_new_tokens=1)[-1] == expected
+
+
+@pytest.mark.parametrize("kwargs", [
+    {"temperature": 0.0},
+    {"temperature": float("nan")},
+    {"top_k": 0},
+    {"top_k": 99},
+    {"top_p": 0.0},
+    {"top_p": 1.1},
+])
+def test_sampling_rejects_invalid_parameters(kwargs):
+    model = DecoderLanguageModel(vocab_size=8, width=4, heads=2, layers=1)
+    with pytest.raises(ValueError):
+        model.sample_next_token([1, 2], **kwargs)
