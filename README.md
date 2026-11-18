@@ -2,42 +2,54 @@
 
 **Creator by Bittu Pandit**
 
-An independent AI research and engineering project focused on building a capable, reliable, measurable intelligence system.
+An independent AI research and engineering project building a measurable, independently implemented intelligence stack.
 
 ## Mission
 
-Develop an independently engineered AI system with strong reasoning, coding, scientific research, memory, multimodal, and agent capabilities. The long-term ambition is to outperform leading AI systems in clearly defined domains, demonstrated through reproducible evaluations.
+Develop an independently engineered AI system for reasoning, coding, scientific research, memory, multimodal processing, and permissioned tool use. The long-term ambition is to outperform leading AI systems in clearly defined domains through reproducible evaluations.
 
-> Performance superiority is a research goal, not an established claim. All capability claims must be supported by repeatable tests.
+> The 99% target is an ambition for independence and capability, not a measured intelligence score. No GPT-6-class superiority is claimed.
 
-## Core principles
+## Current implemented foundations
 
-- **Independent core:** external models may assist development, but must not be a mandatory runtime dependency of the core.
-- **Evidence first:** distinguish verified facts, hypotheses, estimates, and unknowns.
-- **Measured progress:** track benchmark results, regressions, latency, resource use, and reliability.
-- **Safe improvement:** experiment in isolated branches and environments; require review before production changes.
-- **Reproducibility:** version datasets, configurations, code, and evaluation results.
-- **Resource awareness:** prioritize practical CPU/Android-friendly development paths while documenting hardware requirements for larger training.
+- Deterministic UTF-8 byte tokenizer for Hindi, English, and Unicode text.
+- Small trainable one-hidden-layer neural network with repository-owned weights.
+- Versioned JSON model checkpoints with validation.
+- Finite-difference check of the backpropagation gradient.
+- Single-head causal self-attention research primitive.
+- Byte-level next-token data preparation and toy regression training loop.
+- Reproducible experiment configuration and regression evaluation metrics.
+- JSONL dataset loader requiring text, source, and license metadata.
+- Dataset metadata audit for duplicates, source labels, and license allowlists.
+- Explicit in-memory knowledge store with source provenance and deletion.
+- Permission-gated tool registry; elevated and high-risk tools require approval.
+- GitHub Actions CI, Dependabot, and CodeQL workflow.
 
-## Initial development tracks
+## Current limitations
 
-1. Architecture and requirements
-2. Data and tokenizer research
-3. Model and inference core
-4. Reasoning and tool-use
-5. Memory and knowledge
-6. Multi-agent orchestration
-7. Training and evaluation
-8. Security and safety
-9. Documentation and deployment
+This is an early research prototype, not a trained foundation model or production AI assistant. The MLP and next-byte regressor are educational baselines; attention is not yet integrated into a trainable Transformer. There is no multimodal model, large-scale training pipeline, persistent encrypted memory, autonomous multi-agent runtime, or validated OS/container sandbox.
 
-## Repository status
+## Verification
 
-This repository is at its initial setup stage. No trained foundation model or verified capability advantage is claimed.
+GitHub Actions CI has passed for the current codebase, including pytest and Ruff. CodeQL analysis is configured and its first run is being checked. Passing software tests does not establish broad intelligence or performance superiority.
+
+## Development status
+
+See [PROGRESS.md](PROGRESS.md) for the verified 5% work-package tracker, [docs/ROADMAP.md](docs/ROADMAP.md) for staged goals, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system boundaries.
 
 ## Getting started
 
-See [docs/ROADMAP.md](docs/ROADMAP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and [CONTRIBUTING.md](CONTRIBUTING.md).
+```bash
+python -m pip install -e ".[dev]"
+pytest -q
+ruff check .
+```
+
+The CLI prototype is available as `ssi-core` after installation.
+
+## License
+
+No open-source license has been selected yet. Until one is added, the repository remains subject to default copyright rules; do not assume permission to reuse or redistribute its code.
 
 ## Creator
 
