@@ -161,7 +161,7 @@ public class MainActivity extends Activity {
                 for(int i=0;i<arr.length();i++) {
                     JSONObject item=arr.getJSONObject(i);
                     String docUrl=item.optString("doc_url");
-                    if (!docUrl.matches("https://github[.]com/egalego-sudo/special-super-intelligency/blob/(android-control-app-v1|main)/docs/modules/[0-9]{2}-[a-z0-9-]+[.]md")) {
+                    if (!ModuleUrlValidator.isAllowed(docUrl)) {
                         throw new Exception("Rejected module document URL");
                     }
                     fresh.add(new Module(item));
