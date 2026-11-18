@@ -74,11 +74,44 @@ def evaluate_examples(model, examples, *, tokenizer=None):
     }
 
 
+def scheduled_learning_rate(base_rate, epoch, total_epochs, *,
+                             schedule="constant", warmup_epochs=0,
+                             minimum_rate=0.0):
+    """Calculate a deterministic per-epoch constant, linear or cosine rate."""
+    if (type(base_rate) not in (int, float) or not math.isfinite(base_rate)
+            or base_rate <= 0):
+        raise ValueError("base_rate must be positive and finite.")
+    if type(total_epochs) is not int or total_epochs <= 0:
+        raise ValueError("total_epochs must be a positive integer.")
+    if type(epoch) is not int or not 1 <= epoch <= total_epochs:
+        raise ValueError("epoch must be within the training run.")
+    if type(warmup_epochs) is not int or not 0 <= warmup_epochs < total_epochs:
+        raise ValueError("warmup_epochs must be between zero and total_epochs - 1.")
+    if (type(minimum_rate) not in (int, float) or not math.isfinite(minimum_rate)
+            or minimum_rate < 0 or minimum_rate > base_rate):
+        raise ValueError("minimum_rate must be finite and between zero and base_rate.")
+    if schedule not in ("constant", "linear", "cosine"):
+        raise ValueError("schedule must be constant, linear or cosine.")
+    if warmup_epochs and epoch <= warmup_epochs:
+        return base_rate * epoch / warmup_epochs
+    if schedule == "constant":
+        return base_rate
+    span = total_epochs - warmup_epochs
+    progress = (epoch - warmup_epochs) / span
+    if schedule == "linear":
+        return base_rate + (minimum_rate - base_rate) * progress
+    return minimum_rate + (base_rate - minimum_rate) * (
+        1.0 + math.cos(math.pi * progress)
+    ) / 2.0
+
+
 def fit_with_validation(model, training_examples, validation_examples, *,
                         epochs=5, batch_size=None, tokenizer=None,
                         learning_rate=0.001, max_grad_norm=1.0,
                         weight_decay=0.01, optimizer="adamw", seed=0,
-                        checkpoint_path=None):
+                        checkpoint_path=None, schedule="constant",
+                        warmup_epochs=0, minimum_learning_rate=0.0,
+                        patience=None, min_delta=0.0):
     """Train reproducibly, select the lowest-validation-loss epoch and restore it."""
     import copy
     import random
@@ -90,6 +123,10 @@ def fit_with_validation(model, training_examples, validation_examples, *,
         raise ValueError("epochs must be a positive integer.")
     if type(seed) is not int:
         raise ValueError("seed must be an integer.")
+    if patience is not None and (type(patience) is not int or patience <= 0):
+        raise ValueError("patience must be a positive integer when provided.")
+    if type(min_delta) not in (int, float) or not math.isfinite(min_delta) or min_delta < 0:
+        raise ValueError("min_delta must be finite and non-negative.")
 
     training_samples = build_next_token_samples(
         training_examples, tokenizer, model.max_sequence_length
@@ -102,15 +139,21 @@ def fit_with_validation(model, training_examples, validation_examples, *,
     best_epoch = 0
     history = []
     rng = random.Random(seed)
+    stale_epochs = 0
+    stopped_early = False
 
     for epoch in range(1, epochs + 1):
         ordered = list(training_samples)
         rng.shuffle(ordered)
+        epoch_learning_rate = scheduled_learning_rate(
+            learning_rate, epoch, epochs, schedule=schedule,
+            warmup_epochs=warmup_epochs, minimum_rate=minimum_learning_rate,
+        )
         train_before, train_after = model.train(
             ordered,
             epochs=1,
             batch_size=batch_size,
-            learning_rate=learning_rate,
+            learning_rate=epoch_learning_rate,
             max_grad_norm=max_grad_norm,
             weight_decay=weight_decay,
             optimizer=optimizer,
@@ -120,6 +163,7 @@ def fit_with_validation(model, training_examples, validation_examples, *,
         )
         record = {
             "epoch": epoch,
+            "learning_rate": epoch_learning_rate,
             "training_loss_before": train_before,
             "training_loss_after": train_after,
             "validation_loss": validation_metrics["loss"],
@@ -128,12 +172,18 @@ def fit_with_validation(model, training_examples, validation_examples, *,
             "validation_tokens": validation_metrics["tokens"],
         }
         history.append(record)
-        if validation_metrics["loss"] < best_loss:
+        if validation_metrics["loss"] < best_loss - min_delta:
             best_loss = validation_metrics["loss"]
             best_epoch = epoch
             best_model = copy.deepcopy(model)
+            stale_epochs = 0
             if checkpoint_path is not None:
                 best_model.save_checkpoint(checkpoint_path)
+        else:
+            stale_epochs += 1
+            if patience is not None and stale_epochs >= patience:
+                stopped_early = True
+                break
 
     # Restore the best validation checkpoint, not merely the final epoch.
     model.__dict__.clear()
@@ -142,6 +192,8 @@ def fit_with_validation(model, training_examples, validation_examples, *,
         "best_epoch": best_epoch,
         "best_validation_loss": best_loss,
         "history": history,
+        "epochs_completed": len(history),
+        "stopped_early": stopped_early,
         "training_samples": len(training_samples),
         "validation_samples": len(validation_samples),
     }
