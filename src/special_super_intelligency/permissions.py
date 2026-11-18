@@ -33,6 +33,8 @@ class ToolRegistry:
     def register(self, spec: ToolSpec) -> None:
         if not spec.name or not spec.name.replace("_", "").isalnum():
             raise ValueError("Tool names must contain only letters, digits, and underscores.")
+        if not callable(spec.handler):
+            raise TypeError("Tool handler must be callable.")
         if spec.name in self._tools:
             raise ValueError(f"Tool {spec.name!r} is already registered.")
         self._tools[spec.name] = spec
