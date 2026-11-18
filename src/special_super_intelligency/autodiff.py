@@ -1,8 +1,8 @@
 """Minimal reverse-mode scalar automatic differentiation engine.
 
 This research primitive is intentionally small and dependency-free. It provides
-correct scalar gradients for arithmetic and common smooth activations; it is
-not yet wired into DecoderLanguageModel parameters.
+scalar reverse-mode gradients for the arithmetic and smooth activations used by
+the decoder trainer; it is a transparent reference engine, not a high-performance autodiff backend.
 """
 from __future__ import annotations
 
