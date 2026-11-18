@@ -52,3 +52,49 @@ def test_evaluation_rejects_empty_text_pairs():
     model = DecoderLanguageModel(vocab_size=256, width=2, heads=1, layers=1)
     with pytest.raises(ValueError, match="no next-token"):
         evaluate_examples(model, [TextExample("x", "source", "CC0")])
+
+from special_super_intelligency.dataset import TextExample
+from special_super_intelligency.transformer import DecoderLanguageModel
+
+
+def test_fit_selects_and_restores_best_validation_checkpoint(tmp_path):
+    training = [
+        TextExample("abab", "author training fixture", "CC0"),
+        TextExample("baba", "author training fixture", "CC0"),
+    ]
+    validation = [TextExample("abab", "separate validation author", "CC0")]
+    model = DecoderLanguageModel(vocab_size=256, width=2, heads=1, layers=1, seed=109)
+    checkpoint = tmp_path / "best-model.json"
+
+    result = model.fit(
+        training,
+        validation,
+        epochs=3,
+        batch_size=2,
+        learning_rate=0.005,
+        seed=17,
+        checkpoint_path=checkpoint,
+    )
+    assert result["best_epoch"] in (1, 2, 3)
+    assert len(result["history"]) == 3
+    assert result["training_samples"] == 6
+    assert result["validation_samples"] == 3
+    assert checkpoint.exists()
+
+    restored = DecoderLanguageModel.load_checkpoint(checkpoint)
+    actual = model.forward([97, 98])
+    expected = restored.forward([97, 98])
+    for actual_row, expected_row in zip(actual, expected):
+        assert actual_row == pytest.approx(expected_row)
+
+
+def test_fit_is_reproducible_for_same_seed():
+    training = [TextExample("abab", "train author", "CC0")]
+    validation = [TextExample("baba", "validation author", "CC0")]
+    first = DecoderLanguageModel(vocab_size=256, width=2, heads=1, layers=1, seed=113)
+    second = DecoderLanguageModel(vocab_size=256, width=2, heads=1, layers=1, seed=113)
+
+    first_result = first.fit(training, validation, epochs=2, seed=23, learning_rate=0.005)
+    second_result = second.fit(training, validation, epochs=2, seed=23, learning_rate=0.005)
+    assert first_result == second_result
+    assert first.forward([97, 98]) == second.forward([97, 98])
