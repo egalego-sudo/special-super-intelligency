@@ -52,12 +52,23 @@ jobs:
       - name: Boot emulator
         run: |
           export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p /tmp/ssi-emulator
           test -f "$ANDROID_AVD_HOME/ssi-api35.ini"
           test -x "$ANDROID_HOME/emulator/emulator"
           test -x "$ANDROID_HOME/platform-tools/adb"
+          # GitHub-hosted Linux runners may expose /dev/kvm without granting
+          # the runner account access. Enable access only on this ephemeral runner.
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+            ls -l /dev/kvm
+            test -r /dev/kvm && test -w /dev/kvm
+          else
+            echo "KVM device is unavailable on this runner." | tee /tmp/ssi-emulator/kvm-status.txt
+            exit 1
+          fi
           "$ANDROID_HOME/platform-tools/adb" start-server
-          "$ANDROID_HOME/emulator/emulator" -avd ssi-api35 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel auto > /tmp/ssi-emulator.log 2>&1 &
-          timeout 120 "$ANDROID_HOME/platform-tools/adb" wait-for-device
+          "$ANDROID_HOME/emulator/emulator" -avd ssi-api35 -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel on > /tmp/ssi-emulator.log 2>&1 &
+          timeout 180 "$ANDROID_HOME/platform-tools/adb" wait-for-device
           for i in $(seq 1 180); do
             BOOTED="$("$ANDROID_HOME/platform-tools/adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
             if [ "$BOOTED" = "1" ]; then break; fi
