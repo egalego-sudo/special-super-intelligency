@@ -19,7 +19,7 @@
 | 11 | Demonstrate controlled tiny-corpus overfit and held-out generalization measurement | COMPLETE | `run_decoder_tiny_corpus_experiment` uses separate authored synthetic train/validation fixtures, fixed seed and reproducible training settings; reports train loss change, held-out loss, perplexity, accuracy and generalization gap; CI test confirms overfit and finite held-out metrics |
 | 12 | Add language-model perplexity and next-token accuracy evaluation | COMPLETE | Held-out evaluator returns cross-entropy loss, perplexity, next-token accuracy and token count; metric bounds and dataset integration tests pass |
 | 13 | Add licensed corpus ingestion and source-level provenance audit | COMPLETE | Training, evaluation and fit require an explicit human-approved license allowlist; exact license/source counts and SHA-256 dataset digests recorded separately for train/validation; unapproved license rejection tests; human legal review remains mandatory |
-| 14 | Add configurable temperature, top-k and top-p sampling | NOT STARTED | Deterministic sampling and probability validity tests |
+| 14 | Add configurable temperature, top-k and top-p sampling | COMPLETE | Temperature scaling, top-k truncation, nucleus top-p filtering, seeded sampling and autoregressive generation; stable normalized probabilities, greedy-default compatibility and invalid-parameter tests; CI 128 passed |
 | 15 | Add efficient inference context handling and KV cache | NOT STARTED | Cached/uncached logits equivalence tests |
 | 16 | Add performance profiling and memory/throughput baselines | NOT STARTED | Reproducible hardware-labelled benchmark report |
 | 17 | Add broad reasoning, coding, factuality and robustness benchmark harness | NOT STARTED | Fixed datasets, baselines and reproducible scoring |
@@ -29,11 +29,11 @@
 
 ## Verified progress
 
-**65% — 13 of 20 Phase 2 packages complete.**
+**70% — 14 of 20 Phase 2 packages complete.**
 
 The current implementation is an early research prototype. It now includes a dependency-free reverse-mode scalar autodiff engine and a reference trainer that propagates gradients through embeddings, causal attention projections, attention output, feed-forward weights and the vocabulary projection. A deterministic tiny-corpus test verifies loss reduction and updates to embedding, attention and FFN weights; a full-model parameter gradient is checked against finite differences. This is a correctness milestone, not evidence of broad language competence or useful-scale training.
 
-Current GitHub CI on commit `8188ae391573486848ae438844127fcaa4f046f3`: 128 pytest tests passed; Ruff passed. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI. Android emulator smoke previously exposed `UnknownHostException` for `raw.githubusercontent.com`; the workflow now records remote sync as NOT VERIFIED when emulator DNS is unavailable, while independently checking the remote JSON from the runner and continuing UI/offline tests.
+Current GitHub CI on commit `b1cb160182a6f3e0fb6bea9eeaae92546d4026ea`: 128 pytest tests passed; Ruff passed. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI. Android emulator smoke previously exposed `UnknownHostException` for `raw.githubusercontent.com`; the workflow now records remote sync as NOT VERIFIED when emulator DNS is unavailable, while independently checking the remote JSON from the runner and continuing UI/offline tests.
 
 ## Non-claims and release gates
 
