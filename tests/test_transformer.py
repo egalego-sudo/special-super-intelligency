@@ -43,3 +43,60 @@ def test_decoder_block_rejects_non_finite_input():
     block = DecoderTransformerBlock(width=2, heads=1)
     with pytest.raises(ValueError):
         block.forward([[float("nan"), 0.0]])
+
+
+def test_language_model_returns_vocabulary_logits():
+    from special_super_intelligency.transformer import DecoderLanguageModel
+
+    model = DecoderLanguageModel(vocab_size=16, width=8, heads=2, layers=2, seed=23)
+    logits = model.forward([1, 2, 3])
+    assert len(logits) == 3
+    assert all(len(position) == 16 for position in logits)
+
+
+def test_language_model_probabilities_are_normalized():
+    from special_super_intelligency.transformer import DecoderLanguageModel
+
+    model = DecoderLanguageModel(vocab_size=11, width=4, heads=2, layers=1)
+    probabilities = model.next_token_probabilities([1, 2])
+    assert len(probabilities) == 11
+    assert all(0.0 <= value <= 1.0 for value in probabilities)
+    assert sum(probabilities) == pytest.approx(1.0)
+
+
+def test_language_model_generation_is_autoregressive():
+    from special_super_intelligency.transformer import DecoderLanguageModel
+
+    model = DecoderLanguageModel(vocab_size=9, width=4, heads=2, layers=1, seed=31)
+    generated = model.generate([1, 2], max_new_tokens=3)
+    assert len(generated) == 5
+    assert generated[:2] == [1, 2]
+    assert all(0 <= token < 9 for token in generated)
+
+
+def test_language_model_rejects_out_of_range_tokens():
+    from special_super_intelligency.transformer import DecoderLanguageModel
+
+    model = DecoderLanguageModel(vocab_size=5, width=4, heads=2, layers=1)
+    with pytest.raises(ValueError):
+        model.forward([5])
+
+
+def test_language_model_rejects_excessive_context():
+    from special_super_intelligency.transformer import DecoderLanguageModel
+
+    model = DecoderLanguageModel(
+        vocab_size=5, width=4, heads=2, layers=1, max_sequence_length=2
+    )
+    with pytest.raises(ValueError):
+        model.forward([1, 2, 3])
+
+
+def test_language_model_does_not_leak_future_tokens():
+    from special_super_intelligency.transformer import DecoderLanguageModel
+
+    model = DecoderLanguageModel(vocab_size=12, width=4, heads=2, layers=2, seed=41)
+    first = model.forward([1, 2, 3])
+    changed = model.forward([1, 2, 9])
+    assert first[0] == changed[0]
+    assert first[1] == changed[1]
