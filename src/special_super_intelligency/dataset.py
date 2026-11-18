@@ -27,7 +27,7 @@ def load_jsonl(path: str) -> list[TextExample]:
         except json.JSONDecodeError as exc:
             raise ValueError(f"Invalid JSON on line {line_number}.") from exc
         if not isinstance(record, dict):
-            raise ValueError(f"Line {line_number} must contain a JSON object.")
+            raise TypeError(f"Line {line_number} must contain a JSON object.")
         text = record.get("text")
         source = record.get("source")
         license_name = record.get("license")
