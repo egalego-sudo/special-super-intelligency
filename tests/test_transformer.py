@@ -226,3 +226,54 @@ def test_sampling_rejects_invalid_parameters(kwargs):
     model = DecoderLanguageModel(vocab_size=8, width=4, heads=2, layers=1)
     with pytest.raises(ValueError):
         model.sample_next_token([1, 2], **kwargs)
+
+
+def test_kv_cached_step_logits_match_full_sequence_forward():
+    model = DecoderLanguageModel(vocab_size=16, width=4, heads=2, layers=2, seed=163)
+    cache = model.create_kv_cache()
+    tokens = [1, 2, 3, 4]
+    for index, token in enumerate(tokens):
+        cached_logits = model.forward_step(token, cache)
+        full_logits = model.forward(tokens[:index + 1])[-1]
+        assert cached_logits == pytest.approx(full_logits)
+        assert cache.length == index + 1
+        assert all(len(layer) == cache.length for layer in cache.keys)
+        assert all(len(layer) == cache.length for layer in cache.values)
+
+
+def test_kv_cache_rejects_overflow_and_inconsistent_state():
+    model = DecoderLanguageModel(
+        vocab_size=8, width=4, heads=2, layers=1, max_sequence_length=2
+    )
+    cache = model.create_kv_cache()
+    model.forward_step(1, cache)
+    model.forward_step(2, cache)
+    with pytest.raises(ValueError, match="full"):
+        model.forward_step(3, cache)
+
+    broken = model.create_kv_cache()
+    broken.keys[0].append([0.0] * 4)
+    with pytest.raises(ValueError, match="inconsistent"):
+        model.forward_step(1, broken)
+
+
+def test_kv_cached_greedy_generation_matches_full_recompute_reference():
+    model = DecoderLanguageModel(
+        vocab_size=10, width=4, heads=2, layers=2, max_sequence_length=3, seed=167
+    )
+    prompt = [1, 2, 3, 4]
+    expected = list(prompt)
+    for _ in range(6):
+        context = expected[-model.max_sequence_length:]
+        logits = model.forward(context)[-1]
+        expected.append(max(range(model.vocab_size), key=lambda index: logits[index]))
+    assert model.generate(prompt, max_new_tokens=6) == expected
+
+
+def test_kv_cache_supports_longer_generation_by_rolling_context():
+    model = DecoderLanguageModel(
+        vocab_size=9, width=4, heads=2, layers=1, max_sequence_length=2, seed=173
+    )
+    generated = model.generate([1], max_new_tokens=8)
+    assert len(generated) == 9
+    assert all(0 <= token < 9 for token in generated)
