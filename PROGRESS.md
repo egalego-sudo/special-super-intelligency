@@ -60,11 +60,11 @@ Each of the 20 work packages below is worth 5 percentage points. A package is co
 | 02 | Implement black background, white text, and dark surfaces | COMPLETE | Commit `08e78c920afe1235b0a8fdebfde1f51068a7ba22` |
 | 03 | Restrict remote module document links to this repository's approved docs paths | COMPLETE | Commit `6077e62cd45eaf44bbef914be4a0ead447afcfc9` |
 | 04 | Run Python regression suite and lint on the current code checkpoint | COMPLETE | CI run `44327239506`: 65 passed; Ruff passed |
-| 05 | Build Android debug APK on the current code checkpoint | IN PROGRESS | Android APK run `44327225587` |
-| 06 | Complete CodeQL analysis on the current code checkpoint | IN PROGRESS | CodeQL run `44327239177` |
-| 07 | Confirm APK artifact is uploaded and downloadable | PENDING | — |
-| 08 | Inspect APK package metadata, structure, and signing state | PENDING | — |
-| 09 | Review final Java source and remote-config failure paths | PENDING | — |
+| 05 | Build Android debug APK on the current code checkpoint | COMPLETE | Android APK run `44327225587`: success on app code SHA `6077e62` |
+| 06 | Complete CodeQL analysis including Android Java/Kotlin source | IN PROGRESS | Workflow extended to `python, java-kotlin` in commit `2a5d137`; CodeQL run `44327758060` running |
+| 07 | Confirm APK artifact is uploaded and downloadable | COMPLETE | Artifact `14436488817` downloaded successfully |
+| 08 | Inspect APK package metadata, structure, and signing state | COMPLETE | APK package `com.bittupandit.ssi`, version `1.1` / code `2`; ZIP structure valid; debug certificate verified |
+| 09 | Review final Java source and remote-config failure paths | COMPLETE | Dark palette, 14-card fallback, fail-closed document URL allowlist, and sync error fallback reviewed |
 | 10 | Install APK on a physical Android device | NOT VERIFIED | Device access unavailable in GitHub CI |
 | 11 | Verify app launch and dark theme on a physical device | NOT VERIFIED | Device access unavailable in GitHub CI |
 | 12 | Verify all 14 module cards and labels on-device | NOT VERIFIED | Device access unavailable in GitHub CI |
@@ -77,5 +77,5 @@ Each of the 20 work packages below is worth 5 percentage points. A package is co
 | 19 | Complete independent diff review and update evidence | PENDING | — |
 | 20 | Re-check PR state and publish final verified report | PENDING | — |
 
-**Verified progress at this checkpoint: 20% (4 of 20 packages).**  
+**Verified progress at this checkpoint: 40% (8 of 20 packages).**  
 This is the Android control-app update scope only. The full AI research system remains a separate, much larger unfinished mission. No merge, production deployment, or release publication is authorized by this checkpoint.
