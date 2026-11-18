@@ -341,3 +341,17 @@ class DecoderLanguageModel:
                 destination[row_index] = [parameter.data for parameter in row]
 
         return initial_loss, measure_loss()
+
+
+    def save_checkpoint(self, path):
+        """Atomically save the complete model state to a versioned checkpoint."""
+        from .checkpoint import save_checkpoint
+
+        return save_checkpoint(self, path)
+
+    @classmethod
+    def load_checkpoint(cls, path):
+        """Restore a complete model from a validated versioned checkpoint."""
+        from .checkpoint import load_checkpoint
+
+        return load_checkpoint(path)
