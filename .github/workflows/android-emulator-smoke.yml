@@ -62,6 +62,7 @@ jobs:
           adb shell am start -n com.bittupandit.ssi/.MainActivity
           sleep 12
           mkdir -p /tmp/ssi-emulator
+          adb shell wm density > /tmp/ssi-emulator/density.txt
           adb shell uiautomator dump /sdcard/ssi-window.xml
           adb pull /sdcard/ssi-window.xml /tmp/ssi-emulator/online.xml
           adb exec-out screencap -p > /tmp/ssi-emulator/online.png
@@ -95,7 +96,6 @@ jobs:
           PY
       - name: Open first module and verify navigation dialog
         run: |
-          adb shell wm density > /tmp/ssi-emulator/density.txt
           COORDS="$(python - <<'PY'
           import re
           import xml.etree.ElementTree as ET
