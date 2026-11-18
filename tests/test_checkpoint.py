@@ -20,7 +20,9 @@ def test_checkpoint_round_trip_preserves_model_outputs(tmp_path):
     model.save_checkpoint(path)
 
     restored = DecoderLanguageModel.load_checkpoint(path)
-    assert restored.forward([1, 2, 3]) == pytest.approx(expected)
+    actual = restored.forward([1, 2, 3])
+    for actual_row, expected_row in zip(actual, expected):
+        assert actual_row == pytest.approx(expected_row)
     assert restored.vocab_size == model.vocab_size
     assert len(restored.blocks) == len(model.blocks)
 
