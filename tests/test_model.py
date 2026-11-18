@@ -83,3 +83,28 @@ def test_backprop_gradient_matches_finite_difference(tmp_path):
     updated.train([(sample_x, sample_y)], epochs=1, learning_rate=learning_rate)
     analytic_gradient = (original_weight - updated.w1[0][0]) / learning_rate
     assert analytic_gradient == pytest.approx(numeric_gradient, rel=2e-3, abs=2e-5)
+
+
+def test_rejects_non_integer_layer_dimensions():
+    with pytest.raises(ValueError):
+        TinyMLP(2.5, 4, 1)
+
+
+def test_rejects_non_numeric_inputs():
+    with pytest.raises(TypeError):
+        TinyMLP(1, 2, 1).predict(["not-a-number"])  # type: ignore[list-item]
+
+
+def test_rejects_non_integer_epoch_count():
+    with pytest.raises(ValueError):
+        TinyMLP(1, 2, 1).train([([0.0], [0.0])], epochs=1.5)  # type: ignore[arg-type]
+
+
+def test_checkpoint_rejects_invalid_dimensions(tmp_path):
+    checkpoint = tmp_path / "bad-dimensions.json"
+    checkpoint.write_text(
+        '{"format_version":1,"input_size":0,"hidden_size":2,"output_size":1}',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError):
+        TinyMLP.load_checkpoint(str(checkpoint))
