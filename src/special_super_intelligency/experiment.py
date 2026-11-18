@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+import math
+import os
+import statistics
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 
 from .model import TinyMLP
 from .sequence import train_next_byte_model
@@ -90,3 +97,83 @@ def run_decoder_tiny_corpus_experiment(*, epochs=20, seed=131):
         "training_tokens": after_training["tokens"],
         "validation_tokens": after_validation["tokens"],
     }
+
+
+def run_decoder_seed_sweep(*, seeds=(131, 137, 139), epochs=20, output_path=None):
+    """Run identical synthetic decoder experiments across seeds and hash the report."""
+    from .dataset import TextExample
+    from .training import audit_provenance
+
+    if (not isinstance(seeds, (list, tuple)) or len(seeds) < 2
+            or any(type(seed) is not int or seed < 0 for seed in seeds)
+            or len(set(seeds)) != len(seeds)):
+        raise ValueError("seeds must contain at least two unique non-negative integers.")
+    if type(epochs) is not int or epochs <= 0:
+        raise ValueError("epochs must be a positive integer.")
+
+    training_examples = [
+        TextExample("abab", "QUANTUM AI synthetic training fixture", "CC0")
+    ]
+    validation_examples = [
+        TextExample("baba", "QUANTUM AI synthetic held-out fixture", "CC0")
+    ]
+    training_provenance = audit_provenance(
+        training_examples, approved_licenses=("CC0",)
+    )
+    validation_provenance = audit_provenance(
+        validation_examples, approved_licenses=("CC0",)
+    )
+    runs = [
+        run_decoder_tiny_corpus_experiment(epochs=epochs, seed=seed)
+        for seed in seeds
+    ]
+    metric_names = (
+        "training_loss_after",
+        "validation_loss_after",
+        "validation_perplexity",
+        "validation_accuracy",
+        "generalization_gap",
+    )
+    aggregate = {}
+    for metric in metric_names:
+        values = [run[metric] for run in runs]
+        aggregate[metric] = {
+            "mean": statistics.mean(values),
+            "sample_stddev": statistics.stdev(values),
+            "minimum": min(values),
+            "maximum": max(values),
+        }
+        if not all(math.isfinite(value) for value in values):
+            raise ValueError(f"Non-finite experiment metric: {metric}.")
+
+    payload = {
+        "experiment": "decoder-multi-seed-sweep-v1",
+        "synthetic_only": True,
+        "epochs_requested": epochs,
+        "seeds": list(seeds),
+        "seed_count": len(seeds),
+        "training_provenance": training_provenance,
+        "validation_provenance": validation_provenance,
+        "runs": runs,
+        "aggregate": aggregate,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    report = {**payload, "report_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest()}
+
+    if output_path is not None:
+        destination = Path(output_path)
+        temporary_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=destination.parent,
+                prefix=f".{destination.name}.", suffix=".tmp", delete=False,
+            ) as temporary:
+                temporary_path = Path(temporary.name)
+                json.dump(report, temporary, sort_keys=True, indent=2, allow_nan=False)
+                temporary.write("\\n")
+            os.replace(temporary_path, destination)
+        finally:
+            if temporary_path is not None and temporary_path.exists():
+                temporary_path.unlink()
+
+    return report
