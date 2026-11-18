@@ -1,0 +1,45 @@
+import pytest
+
+from special_super_intelligency.transformer import DecoderTransformerBlock
+
+
+def test_decoder_block_preserves_sequence_shape():
+    block = DecoderTransformerBlock(width=8, heads=2, seed=13)
+    result = block.forward([[0.1] * 8, [0.2] * 8, [0.3] * 8])
+    assert len(result) == 3
+    assert all(len(token) == 8 for token in result)
+
+
+def test_decoder_block_is_deterministic_for_same_seed():
+    first = DecoderTransformerBlock(width=8, heads=2, seed=17)
+    second = DecoderTransformerBlock(width=8, heads=2, seed=17)
+    sample = [[float(i + j) / 10 for j in range(8)] for i in range(3)]
+    assert first.forward(sample) == second.forward(sample)
+
+
+def test_decoder_block_masks_future_tokens():
+    block = DecoderTransformerBlock(width=4, heads=2, seed=19)
+    original = [[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8],
+                [0.9, 1.0, 1.1, 1.2]]
+    changed_future = [original[0], original[1], [-9.0, 8.0, -7.0, 6.0]]
+    before = block.forward(original)
+    after = block.forward(changed_future)
+    assert before[0] == after[0]
+    assert before[1] == after[1]
+
+
+def test_decoder_block_rejects_non_divisible_heads():
+    with pytest.raises(ValueError):
+        DecoderTransformerBlock(width=7, heads=2)
+
+
+def test_decoder_block_rejects_bad_sequence_width():
+    block = DecoderTransformerBlock(width=4, heads=2)
+    with pytest.raises(ValueError):
+        block.forward([[1.0, 2.0], [3.0, 4.0]])
+
+
+def test_decoder_block_rejects_non_finite_input():
+    block = DecoderTransformerBlock(width=2, heads=1)
+    with pytest.raises(ValueError):
+        block.forward([[float("nan"), 0.0]])
