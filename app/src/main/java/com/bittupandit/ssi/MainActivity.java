@@ -32,10 +32,10 @@ public class MainActivity extends Activity {
     private final ArrayList<Module> modules = new ArrayList<>();
 
     private static class Module {
-        String id, title, summary, details, status, anchor;
+        String id, title, summary, details, status, anchor, docUrl;
         Module(JSONObject j) {
             id=j.optString("id"); title=j.optString("title"); summary=j.optString("summary");
-            details=j.optString("details"); status=j.optString("status"); anchor=j.optString("anchor");
+            details=j.optString("details"); status=j.optString("status"); anchor=j.optString("anchor"); docUrl=j.optString("doc_url");
         }
     }
 
@@ -134,7 +134,7 @@ public class MainActivity extends Activity {
         for(int i=0;i<rows.length;i++) {
             Module m=new Module(new JSONObject());
             m.id=rows[i][0];m.title=rows[i][1];m.summary=rows[i][2];m.details=rows[i][3];m.status=rows[i][4];
-            m.anchor="#"+String.format(java.util.Locale.US,"%02d",i+1)+"-"+m.id;
+            m.anchor="#"+String.format(java.util.Locale.US,"%02d",i+1)+"-"+m.id;\n            m.docUrl=REPO+"/blob/android-control-app-v1/docs/modules/"+String.format(java.util.Locale.US,"%02d",i+1)+"-"+m.id+".md";
             modules.add(m);
         }
     }
@@ -198,7 +198,7 @@ public class MainActivity extends Activity {
     private void showModule(Module m) {
         String message=m.details+"\n\nCurrent status: "+m.status+"\n\nDashboard button opens this module's roadmap and code search.";
         new AlertDialog.Builder(this).setTitle(m.title).setMessage(message)
-            .setPositiveButton("OPEN ROADMAP",(d,w)->open(REPO+"/blob/android-control-app-v1/docs/roadmap/14-point-roadmap.md"+m.anchor))
+            .setPositiveButton("OPEN ROADMAP",(d,w)->open(m.docUrl))
             .setNeutralButton("SEARCH MODULE CODE",(d,w)->open(REPO+"/search?q="+Uri.encode(m.id)+"&type=code"))
             .setNegativeButton("CLOSE",null).show();
     }
