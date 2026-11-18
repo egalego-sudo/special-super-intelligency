@@ -101,8 +101,8 @@ def test_fit_is_reproducible_for_same_seed():
     ("schedule", "expected"),
     [
         ("constant", [0.1, 0.1, 0.1, 0.1]),
-        ("linear", [0.1, 0.075, 0.05, 0.025]),
-        ("cosine", [0.1, 0.08535533905932738, 0.05, 0.014644660940672627]),
+        ("linear", [0.1, 0.06666666666666667, 0.03333333333333334, 0.0]),
+        ("cosine", [0.1, 0.075, 0.025, 0.0]),
     ],
 )
 def test_learning_rate_schedules(schedule, expected):
