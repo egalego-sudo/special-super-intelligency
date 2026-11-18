@@ -425,11 +425,14 @@ class DecoderLanguageModel:
 
         return train_from_examples(self, examples, **training_options)
 
-    def evaluate_text(self, examples, *, tokenizer=None):
-        """Evaluate next-token loss, perplexity and accuracy on tagged text."""
+    def evaluate_text(self, examples, *, approved_licenses, tokenizer=None):
+        """Evaluate next-token metrics after an explicit license allowlist audit."""
         from .training import evaluate_examples
 
-        return evaluate_examples(self, examples, tokenizer=tokenizer)
+        return evaluate_examples(
+            self, examples, tokenizer=tokenizer,
+            approved_licenses=approved_licenses,
+        )
 
 
     def fit(self, training_examples, validation_examples, **training_options):
