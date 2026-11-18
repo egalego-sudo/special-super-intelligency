@@ -176,6 +176,6 @@ def test_full_decoder_gradient_matches_finite_difference():
     model.blocks[0].ffn_in[0][0] = original
     numeric_gradient = (high - low) / (2 * epsilon)
 
-    model.train(samples, epochs=1, learning_rate=1e-5, max_grad_norm=1e6, weight_decay=0.0)
+    model.train(samples, epochs=1, learning_rate=1e-5, max_grad_norm=1e6, weight_decay=0.0, optimizer="sgd")
     learned_gradient = (original - model.blocks[0].ffn_in[0][0]) / 1e-5
     assert learned_gradient == pytest.approx(numeric_gradient, rel=2e-3, abs=2e-4)
