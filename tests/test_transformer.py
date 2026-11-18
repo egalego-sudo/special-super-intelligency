@@ -150,3 +150,32 @@ def test_full_decoder_training_rejects_non_finite_gradients_configuration():
     model = DecoderLanguageModel(vocab_size=5, width=2, heads=1, layers=1)
     with pytest.raises(ValueError):
         model.train([([1], 2)], max_grad_norm=float("inf"))
+
+
+def test_full_decoder_gradient_matches_finite_difference():
+    import math
+
+    from special_super_intelligency.transformer import DecoderLanguageModel
+
+    model = DecoderLanguageModel(vocab_size=5, width=2, heads=1, layers=1, seed=79)
+    samples = [([1, 2], 3)]
+    parameter = model.blocks[0].ffn_in[0][0]
+    epsilon = 1e-5
+
+    def loss():
+        logits = model.forward([1, 2])[-1]
+        peak = max(logits)
+        exps = [math.exp(value - peak) for value in logits]
+        return -math.log(exps[3] / sum(exps))
+
+    original = parameter
+    model.blocks[0].ffn_in[0][0] = original + epsilon
+    high = loss()
+    model.blocks[0].ffn_in[0][0] = original - epsilon
+    low = loss()
+    model.blocks[0].ffn_in[0][0] = original
+    numeric_gradient = (high - low) / (2 * epsilon)
+
+    model.train(samples, epochs=1, learning_rate=1e-5, max_grad_norm=1e6)
+    learned_gradient = (original - model.blocks[0].ffn_in[0][0]) / 1e-5
+    assert learned_gradient == pytest.approx(numeric_gradient, rel=2e-3, abs=2e-4)
