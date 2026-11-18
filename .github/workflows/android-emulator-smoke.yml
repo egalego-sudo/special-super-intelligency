@@ -41,11 +41,18 @@ jobs:
           sdkmanager "platform-tools" "emulator" "platforms;android-35" "build-tools;35.0.0" "system-images;android-35;google_apis;x86_64"
       - name: Create Android virtual device
         run: |
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
           echo "no" | avdmanager create avd --force --name ssi-api35 --package "system-images;android-35;google_apis;x86_64" --device "pixel_2"
+          avdmanager list avd
+          test -f "$ANDROID_AVD_HOME/ssi-api35.ini"
+          test -d "$ANDROID_AVD_HOME/ssi-api35.avd"
       - name: Build APK and JVM unit tests
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
       - name: Boot emulator
         run: |
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          test -f "$ANDROID_AVD_HOME/ssi-api35.ini"
           test -x "$ANDROID_HOME/emulator/emulator"
           test -x "$ANDROID_HOME/platform-tools/adb"
           "$ANDROID_HOME/platform-tools/adb" start-server
