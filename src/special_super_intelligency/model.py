@@ -22,8 +22,11 @@ class TinyMLP:
     """One-hidden-layer tanh network trained with batch gradient descent."""
 
     def __init__(self, input_size: int, hidden_size: int, output_size: int, seed: int = 7):
-        if min(input_size, hidden_size, output_size) <= 0:
-            raise ValueError("All layer sizes must be positive.")
+        if any(type(size) is not int or size <= 0
+               for size in (input_size, hidden_size, output_size)):
+            raise ValueError("All layer sizes must be positive integers.")
+        if type(seed) is not int:
+            raise TypeError("seed must be an integer.")
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.output_size = output_size
@@ -39,9 +42,13 @@ class TinyMLP:
 
     @staticmethod
     def _validate_vector(values: list[float], expected: int, name: str) -> None:
+        if not isinstance(values, list):
+            raise TypeError(f"{name} must be a list of numbers.")
         if len(values) != expected:
             raise ValueError(f"{name} must contain exactly {expected} values.")
-        if any(not math.isfinite(float(value)) for value in values):
+        if any(type(value) not in (int, float) for value in values):
+            raise TypeError(f"{name} must contain only numeric values.")
+        if any(not math.isfinite(value) for value in values):
             raise ValueError(f"{name} must contain only finite numbers.")
 
     def predict(self, inputs: list[float]) -> list[float]:
@@ -64,8 +71,12 @@ class TinyMLP:
     ) -> TrainingReport:
         if not samples:
             raise ValueError("At least one training sample is required.")
-        if epochs <= 0 or not math.isfinite(learning_rate) or learning_rate <= 0:
-            raise ValueError("epochs and learning_rate must be positive.")
+        if type(epochs) is not int or epochs <= 0:
+            raise ValueError("epochs must be a positive integer.")
+        if type(learning_rate) not in (int, float) or (
+            not math.isfinite(learning_rate) or learning_rate <= 0
+        ):
+            raise ValueError("learning_rate must be a positive finite number.")
         for inputs, targets in samples:
             self._validate_vector(inputs, self.input_size, "inputs")
             self._validate_vector(targets, self.output_size, "targets")
@@ -176,7 +187,7 @@ class TinyMLP:
             if not valid:
                 raise ValueError(f"Invalid checkpoint shape for {name}.")
             flat = values if len(shape) == 1 else [value for row in values for value in row]
-            if any(not isinstance(value, (int, float)) or not math.isfinite(value)
+            if any(type(value) not in (int, float) or not math.isfinite(value)
                    for value in flat):
                 raise ValueError(f"Invalid checkpoint values for {name}.")
             setattr(model, name, [[float(v) for v in row] for row in values]
