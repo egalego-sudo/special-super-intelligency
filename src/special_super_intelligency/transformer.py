@@ -7,6 +7,7 @@ from __future__ import annotations
 import copy
 import math
 import random
+from dataclasses import dataclass
 
 from .autodiff import Value
 from .optim import AdamW
@@ -30,6 +31,15 @@ def _norm(vector):
     variance = sum((x - mean) ** 2 for x in vector) / len(vector)
     scale = (variance + 1e-5) ** -0.5
     return [(x - mean) * scale for x in vector]
+
+
+@dataclass
+class DecoderKVCache:
+    """Per-layer key/value tensors for incremental causal decoding."""
+
+    length: int
+    keys: list[list[list[float]]]
+    values: list[list[list[float]]]
 
 
 class DecoderTransformerBlock:
@@ -122,6 +132,54 @@ class DecoderTransformerBlock:
             projected = _linear(activated, self.ffn_out)
             output.append([token[i] + projected[i] for i in range(self.width)])
         return output
+
+    def forward_step(self, token, past_keys, past_values):
+        """Process one token using cached keys/values; return hidden, key, value."""
+        if not isinstance(token, list) or len(token) != self.width:
+            raise ValueError("token must have the configured hidden width.")
+        if len(past_keys) != len(past_values):
+            raise ValueError("key/value cache lengths must match.")
+        if any(type(value) not in (int, float) or not math.isfinite(value)
+               for value in token):
+            raise ValueError("token values must be finite numbers.")
+
+        normalized = _norm(token)
+        query = _linear(normalized, self.query)
+        key = _linear(normalized, self.key)
+        value = _linear(normalized, self.value)
+        keys = past_keys + [key]
+        values = past_values + [value]
+        merged = []
+        for head in range(self.heads):
+            start = head * self.head_width
+            stop = start + self.head_width
+            q = query[start:stop]
+            scores = [
+                sum(q[d] * keys[position][start + d]
+                    for d in range(self.head_width)) / math.sqrt(self.head_width)
+                for position in range(len(keys))
+            ]
+            peak = max(scores)
+            exponentials = [math.exp(score - peak) for score in scores]
+            total = sum(exponentials)
+            probabilities = [item / total for item in exponentials]
+            for dimension in range(start, stop):
+                merged.append(sum(
+                    probabilities[position] * values[position][dimension]
+                    for position in range(len(values))
+                ))
+        attended = _linear(merged, self.attention_output)
+        residual = [token[index] + attended[index] for index in range(self.width)]
+        hidden = _linear(_norm(residual), self.ffn_in)
+        activated = [
+            0.5 * item * (1.0 + math.tanh(
+                math.sqrt(2.0 / math.pi) * (item + 0.044715 * item ** 3)
+            ))
+            for item in hidden
+        ]
+        projected = _linear(activated, self.ffn_out)
+        output = [residual[index] + projected[index] for index in range(self.width)]
+        return output, key, value
 
 
 class DecoderLanguageModel:
