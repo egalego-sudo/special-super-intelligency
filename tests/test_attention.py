@@ -1,6 +1,6 @@
-import pytest
-
 from special_super_intelligency.attention import causal_self_attention
+
+import pytest
 
 
 IDENTITY = [[1.0, 0.0], [0.0, 1.0]]
