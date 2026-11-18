@@ -6,40 +6,50 @@
 This roadmap prioritizes verifiable foundations over unsupported claims.
 
 ## Phase 0 — Repository foundation
-- [x] Expand project README
-- [ ] Add architecture and contribution documentation
-- [ ] Add license decision and project governance
-- [ ] Add CI checks and basic repository hygiene
+- [x] Expand project README and current status
+- [x] Add architecture and contribution documentation
+- [ ] Select an open-source license and project governance rules
+- [x] Add CI checks, Dependabot, and CodeQL configuration
 
 ## Phase 1 — Requirements and baselines
-- Define intended users, deployment targets, and resource limits
-- Define capability domains and measurable acceptance criteria
-- Select transparent public evaluation datasets and prevent test contamination
-- Record baseline models and evaluation conditions
+- [x] Define an initial architecture and staged work plan
+- [ ] Define intended users, deployment targets, and hardware/resource budgets
+- [ ] Define capability domains and acceptance criteria for real reasoning tasks
+- [x] Add a transparent toy evaluation harness
+- [ ] Select public evaluation datasets and document contamination controls
+- [ ] Record comparable external baseline results
 
 ## Phase 2 — Independent core prototype
-- Implement a small, inspectable model/inference prototype
-- Define tokenizer and data formats
-- Add deterministic configuration and reproducible runs
-- Add unit tests and numerical correctness checks
+- [x] Implement an inspectable trainable neural-network baseline
+- [x] Define a reversible byte tokenizer and data format
+- [x] Add deterministic configuration and reproducible toy runs
+- [x] Add model checkpoint save/load and validation
+- [x] Add a single-head causal attention research primitive
+- [ ] Integrate trainable attention into a complete Transformer block
+- [ ] Add numerical tests for attention and full model gradients
 
 ## Phase 3 — Reasoning, tools, and memory
-- Build structured task planning and tool interfaces
-- Add evidence-linked retrieval and memory
-- Add verifier/critic workflows
-- Add sandboxed code execution with explicit permissions
+- [x] Build structured task planning and permissioned tool interfaces
+- [x] Add explicit in-memory knowledge retrieval with provenance
+- [ ] Add durable, encrypted, user-controlled memory and retention controls
+- [ ] Add verifier/critic workflows with evidence tracking
+- [ ] Add a genuinely isolated code-execution sandbox; current tool registry is only an approval gate
 
 ## Phase 4 — Training and improvement
-- Build dataset validation and preprocessing
-- Establish training and fine-tuning experiments
-- Track compute, cost, energy, and model quality
-- Use isolated experiments and regression gates
+- [x] Build basic dataset validation and metadata audit
+- [x] Establish a tiny next-byte training experiment
+- [ ] Complete source-term and legal review for any training corpus
+- [ ] Build scalable training, checkpointing, and resume workflows
+- [ ] Track compute, cost, energy, and model quality
+- [ ] Use isolated experiments and regression gates
 
 ## Phase 5 — Evaluation and scaling
-- Evaluate reasoning, coding, math, factuality, safety, latency, and cost
-- Compare systems under equivalent conditions
-- Publish reproducible results and known limitations
-- Scale only when evidence justifies it
+- [x] Add basic regression metrics and CI regression checks
+- [ ] Evaluate reasoning, coding, math, factuality, safety, latency, and cost
+- [ ] Compare against external systems under equivalent conditions
+- [ ] Publish reproducible results and known limitations
+- [ ] Scale only when evidence and resources justify it
 
 ## Release gates
-No production release based solely on self-reported scores. Require passing tests, security review, reproducible evaluation, documented limitations, and human approval.
+
+No production release based solely on self-reported scores. Require passing tests, security review, reproducible evaluation, documented limitations, a selected license, and human approval.
