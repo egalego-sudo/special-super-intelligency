@@ -133,8 +133,7 @@ class DecoderLanguageModel:
             for _ in range(width)
         ]
 
-    def forward(self, token_ids):
-        """Return per-position vocabulary logits for a non-empty token sequence."""
+    def _encode(self, token_ids):
         if not isinstance(token_ids, list) or not token_ids:
             raise ValueError("token_ids must be a non-empty list.")
         if len(token_ids) > self.max_sequence_length:
@@ -152,7 +151,12 @@ class DecoderLanguageModel:
             sequence.append(vector)
         for block in self.blocks:
             sequence = block.forward(sequence)
-        return [_linear(token, self.output_projection) for token in sequence]
+        return sequence
+
+    def forward(self, token_ids):
+        """Return per-position vocabulary logits for a non-empty token sequence."""
+        return [_linear(token, self.output_projection)
+                for token in self._encode(token_ids)]
 
     def next_token_probabilities(self, token_ids):
         """Return a stable softmax distribution for the final position."""
@@ -175,3 +179,55 @@ class DecoderLanguageModel:
             generated.append(max(range(self.vocab_size),
                                  key=lambda index: probabilities[index]))
         return generated
+
+    def train_output_head(self, samples, *, epochs=100, learning_rate=0.1):
+        """Train vocabulary projection with next-token cross-entropy.
+
+        Decoder blocks and token embeddings remain frozen in this first training
+        milestone. Samples are (non-empty context token IDs, target token ID).
+        """
+        if not isinstance(samples, list) or not samples:
+            raise ValueError("At least one training sample is required.")
+        if type(epochs) is not int or epochs <= 0:
+            raise ValueError("epochs must be a positive integer.")
+        if (type(learning_rate) not in (int, float)
+                or not math.isfinite(learning_rate) or learning_rate <= 0):
+            raise ValueError("learning_rate must be positive and finite.")
+        validated = []
+        for context, target in samples:
+            self._encode(context)
+            if type(target) is not int or not 0 <= target < self.vocab_size:
+                raise ValueError("target token must be within the vocabulary.")
+            validated.append((context, target))
+
+        def calculate_loss():
+            total = 0.0
+            for context, target in validated:
+                hidden = self._encode(context)[-1]
+                logits = _linear(hidden, self.output_projection)
+                peak = max(logits)
+                exps = [math.exp(value - peak) for value in logits]
+                total += -math.log(max(exps[target] / sum(exps), 1e-300))
+            return total / len(validated)
+
+        initial_loss = calculate_loss()
+        for _ in range(epochs):
+            gradients = [[0.0] * self.vocab_size for _ in range(self.width)]
+            count = len(validated)
+            for context, target in validated:
+                hidden = self._encode(context)[-1]
+                logits = _linear(hidden, self.output_projection)
+                peak = max(logits)
+                exps = [math.exp(value - peak) for value in logits]
+                total = sum(exps)
+                delta = [value / total for value in exps]
+                delta[target] -= 1.0
+                for row in range(self.width):
+                    for column in range(self.vocab_size):
+                        gradients[row][column] += hidden[row] * delta[column] / count
+            for row in range(self.width):
+                for column in range(self.vocab_size):
+                    self.output_projection[row][column] -= (
+                        learning_rate * gradients[row][column]
+                    )
+        return initial_loss, calculate_loss()
