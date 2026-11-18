@@ -3,6 +3,7 @@
 This is an untrained, deterministic architecture primitive, not a language model.
 """
 from __future__ import annotations
+
 import math
 import random
 
