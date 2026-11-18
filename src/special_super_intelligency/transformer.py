@@ -58,44 +58,56 @@ class DecoderTransformerBlock:
         self.attention_output = init(width, width)
         self.ffn_in, self.ffn_out = init(width, hidden), init(hidden, width)
 
-    def _attention(self, sequence):
+    def _attention(self, sequence, attention_mask):
         qs = [_linear(token, self.query) for token in sequence]
         ks = [_linear(token, self.key) for token in sequence]
         vs = [_linear(token, self.value) for token in sequence]
         outputs = []
         for position, query in enumerate(qs):
+            if not attention_mask[position]:
+                outputs.append([0.0] * self.width)
+                continue
             merged = []
+            allowed = [index for index in range(position + 1) if attention_mask[index]]
             for head in range(self.heads):
                 start = head * self.head_width
                 stop = start + self.head_width
                 q = query[start:stop]
-                scores = [sum(q[d] * ks[p][start + d]
-                              for d in range(self.head_width)) /
-                          math.sqrt(self.head_width)
-                          for p in range(position + 1)]
+                scores = [
+                    sum(q[d] * ks[p][start + d] for d in range(self.head_width))
+                    / math.sqrt(self.head_width)
+                    for p in allowed
+                ]
                 peak = max(scores)
                 exps = [_exp(score - peak) for score in scores]
                 total = sum(exps)
                 probs = [value / total for value in exps]
                 for dimension in range(start, stop):
-                    merged.append(sum(probs[p] * vs[p][dimension]
-                                      for p in range(position + 1)))
+                    merged.append(sum(probs[i] * vs[p][dimension]
+                                      for i, p in enumerate(allowed)))
             outputs.append(_linear(merged, self.attention_output))
         return outputs
 
-    def forward(self, sequence):
-        """Run the block. Future tokens cannot affect earlier output positions."""
+    def forward(self, sequence, attention_mask=None):
+        """Run a causal block while excluding masked padding keys."""
         if not isinstance(sequence, list) or not sequence:
             raise ValueError("sequence must be a non-empty list.")
         if any(not isinstance(token, list) or len(token) != self.width
                for token in sequence):
             raise ValueError("sequence must have the configured width.")
+        if attention_mask is None:
+            attention_mask = [True] * len(sequence)
+        if (not isinstance(attention_mask, list)
+                or len(attention_mask) != len(sequence)
+                or any(type(value) is not bool for value in attention_mask)
+                or not any(attention_mask)):
+            raise ValueError("attention_mask must contain one or more valid boolean positions.")
         if any(type(x.data if isinstance(x, Value) else x) not in (int, float)
                or not math.isfinite(x.data if isinstance(x, Value) else x)
                for token in sequence for x in token):
             raise ValueError("sequence values must be finite numbers.")
         normalized = [_norm(token) for token in sequence]
-        attended = self._attention(normalized)
+        attended = self._attention(normalized, attention_mask)
         residual = [[sequence[i][j] + attended[i][j] for j in range(self.width)]
                     for i in range(len(sequence))]
         output = []
@@ -149,7 +161,7 @@ class DecoderLanguageModel:
             for _ in range(width)
         ]
 
-    def _encode(self, token_ids):
+    def _encode(self, token_ids, attention_mask=None):
         if not isinstance(token_ids, list) or not token_ids:
             raise ValueError("token_ids must be a non-empty list.")
         if len(token_ids) > self.max_sequence_length:
@@ -157,6 +169,15 @@ class DecoderLanguageModel:
         if any(type(token) is not int or not 0 <= token < self.vocab_size
                for token in token_ids):
             raise ValueError("token IDs must be integers within the vocabulary.")
+        if attention_mask is None:
+            attention_mask = [True] * len(token_ids)
+        if (not isinstance(attention_mask, list)
+                or len(attention_mask) != len(token_ids)
+                or any(type(value) is not bool for value in attention_mask)
+                or not any(attention_mask)
+                or any(not attention_mask[index] and any(attention_mask[index + 1:])
+                       for index in range(len(attention_mask)))):
+            raise ValueError("attention_mask must be a non-empty True prefix followed by False padding.")
         sequence = []
         for position, token_id in enumerate(token_ids):
             vector = []
@@ -166,13 +187,33 @@ class DecoderLanguageModel:
                 vector.append(self.embedding[token_id][dimension] + positional)
             sequence.append(vector)
         for block in self.blocks:
-            sequence = block.forward(sequence)
+            sequence = block.forward(sequence, attention_mask)
         return sequence
 
-    def forward(self, token_ids):
-        """Return per-position vocabulary logits for a non-empty token sequence."""
+    def forward(self, token_ids, attention_mask=None):
+        """Return per-position vocabulary logits with optional right-padding mask."""
         return [_linear(token, self.output_projection)
-                for token in self._encode(token_ids)]
+                for token in self._encode(token_ids, attention_mask)]
+
+    def forward_batch(self, batch):
+        """Run a PaddedBatch and return logits only for each sequence's valid tokens."""
+        from .batching import PaddedBatch
+
+        if not isinstance(batch, PaddedBatch):
+            raise TypeError("batch must be a PaddedBatch.")
+        if not (len(batch.input_ids) == len(batch.attention_mask) == len(batch.lengths)):
+            raise ValueError("PaddedBatch fields must have matching batch sizes.")
+        outputs = []
+        for token_ids, mask, length in zip(
+            batch.input_ids, batch.attention_mask, batch.lengths
+        ):
+            if type(length) is not int or not 0 < length <= len(token_ids):
+                raise ValueError("PaddedBatch contains an invalid sequence length.")
+            if sum(mask) != length:
+                raise ValueError("PaddedBatch length does not match its attention mask.")
+            logits = self.forward(token_ids, attention_mask=mask)
+            outputs.append(logits[:length])
+        return outputs
 
     def next_token_probabilities(self, token_ids):
         """Return a stable softmax distribution for the final position."""
