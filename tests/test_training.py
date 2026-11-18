@@ -168,3 +168,50 @@ def test_tiny_corpus_experiment_measures_overfit_and_heldout_generalization():
     assert math.isfinite(report["generalization_gap"])
     assert report["training_tokens"] == 3
     assert report["validation_tokens"] == 3
+
+
+def test_provenance_audit_returns_source_license_counts_and_hash():
+    from special_super_intelligency.training import audit_provenance
+
+    examples = [
+        TextExample("alpha", "author A", "CC0"),
+        TextExample("beta", "author A", "CC0"),
+        TextExample("gamma", "author B", "CC0"),
+    ]
+    report = audit_provenance(examples, approved_licenses=("CC0",))
+    assert report["records"] == 3
+    assert report["license_counts"] == {"CC0": 3}
+    assert report["source_counts"] == {"author A": 2, "author B": 1}
+    assert len(report["dataset_sha256"]) == 64
+    assert report["dataset_sha256"] == audit_provenance(
+        examples, approved_licenses=("CC0",)
+    )["dataset_sha256"]
+
+
+def test_provenance_audit_rejects_unapproved_license():
+    from special_super_intelligency.training import audit_provenance
+
+    examples = [TextExample("text", "unknown source", "All Rights Reserved")]
+    with pytest.raises(ValueError, match="unapproved license"):
+        audit_provenance(examples, approved_licenses=("CC0",))
+
+
+def test_provenance_audit_requires_explicit_allowlist():
+    from special_super_intelligency.training import audit_provenance
+
+    examples = [TextExample("text", "author", "CC0")]
+    with pytest.raises(ValueError, match="approved_licenses"):
+        audit_provenance(examples, approved_licenses=None)
+
+
+def test_fit_rejects_unapproved_validation_license():
+    training = [TextExample("abab", "training author", "CC0")]
+    validation = [TextExample("baba", "validation author", "All Rights Reserved")]
+    model = DecoderLanguageModel(vocab_size=256, width=2, heads=1, layers=1)
+    with pytest.raises(ValueError, match="unapproved license"):
+        model.fit(
+            training,
+            validation,
+            epochs=1,
+            approved_licenses=("CC0",),
+        )
