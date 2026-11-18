@@ -1,10 +1,10 @@
 """Source-audited benchmark scoring for reasoning, coding, factuality and robustness."""
 from __future__ import annotations
 
+from collections import defaultdict
 import hashlib
 import json
 import re
-from collections import defaultdict
 
 
 _CATEGORIES = {"reasoning", "coding", "factuality", "robustness"}
@@ -95,7 +95,7 @@ def score_benchmark(manifest, cases, predictions, *, approved_licenses):
                     raise ValueError("Factuality predictions require a boolean supported field.")
                 citations = prediction.get("citations", [])
                 if not isinstance(citations, list):
-                    raise ValueError("Factuality citations must be a list.")
+                    raise TypeError("Factuality citations must be a list.")
                 correct += int(prediction["supported"] == case["expected"]["supported"])
                 cited += int(bool(citations))
             category_scores[category] = {
@@ -159,5 +159,5 @@ def load_benchmark_bundle(path):
     }:
         raise ValueError("Benchmark bundle structure is invalid.")
     if not isinstance(bundle["baseline_predictions"], dict):
-        raise ValueError("Benchmark baseline predictions must be an object.")
+        raise TypeError("Benchmark baseline predictions must be an object.")
     return bundle
