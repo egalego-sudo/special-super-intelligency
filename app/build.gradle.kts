@@ -11,3 +11,7 @@ android {
         versionName = "1.2"
     }
 }
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+}
