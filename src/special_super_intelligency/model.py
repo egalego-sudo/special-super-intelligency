@@ -140,7 +140,7 @@ class TinyMLP:
         Path(path).write_text(json.dumps(payload, allow_nan=False), encoding="utf-8")
 
     @classmethod
-    def load_checkpoint(cls, path: str) -> "TinyMLP":
+    def load_checkpoint(cls, path: str) -> TinyMLP:
         """Load a checkpoint only when version, dimensions, shapes, and values validate."""
         import json
         from pathlib import Path
@@ -148,10 +148,14 @@ class TinyMLP:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
         if not isinstance(payload, dict) or payload.get("format_version") != 1:
             raise ValueError("Unsupported or invalid checkpoint format.")
+        dimensions = [payload.get("input_size"), payload.get("hidden_size"),
+                      payload.get("output_size")]
+        if any(type(value) is not int or value <= 0 for value in dimensions):
+            raise ValueError("Checkpoint dimensions must be positive integers.")
         model = cls(
-            input_size=payload.get("input_size"),
-            hidden_size=payload.get("hidden_size"),
-            output_size=payload.get("output_size"),
+            input_size=dimensions[0],
+            hidden_size=dimensions[1],
+            output_size=dimensions[2],
         )
         expected = {
             "w1": (model.hidden_size, model.input_size),
