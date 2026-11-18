@@ -59,12 +59,18 @@ def test_timeout_is_reported(monkeypatch):
     sandbox = DockerSandbox(IMAGE)
     monkeypatch.setattr("shutil.which", lambda _: "/usr/bin/docker")
 
+    calls = []
+
     def fake_run(command, **kwargs):
-        raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+        calls.append(command)
+        if command[1] == "run":
+            raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+        return subprocess.CompletedProcess(command, 0)
 
     monkeypatch.setattr("subprocess.run", fake_run)
     with pytest.raises(SandboxTimeout):
         sandbox.run_python("while True: pass")
+    assert calls[1][:3] == ["docker", "rm", "--force"]
 
 
 def test_missing_docker_refuses_to_run_on_host(monkeypatch):
