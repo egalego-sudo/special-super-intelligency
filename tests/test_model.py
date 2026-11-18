@@ -56,3 +56,30 @@ def test_checkpoint_rejects_unknown_version(tmp_path):
     checkpoint.write_text('{"format_version": 999}', encoding="utf-8")
     with pytest.raises(ValueError):
         TinyMLP.load_checkpoint(str(checkpoint))
+
+
+def test_backprop_gradient_matches_finite_difference(tmp_path):
+    model = TinyMLP(2, 3, 1, seed=23)
+    checkpoint = tmp_path / "before.json"
+    model.save_checkpoint(str(checkpoint))
+    updated = TinyMLP.load_checkpoint(str(checkpoint))
+    sample_x = [0.2, -0.4]
+    sample_y = [0.7]
+    learning_rate = 1e-5
+    original_weight = model.w1[0][0]
+
+    def sample_loss(candidate):
+        model.w1[0][0] = candidate
+        prediction = model.predict(sample_x)[0]
+        return (prediction - sample_y[0]) ** 2
+
+    epsilon = 1e-6
+    numeric_gradient = (
+        sample_loss(original_weight + epsilon)
+        - sample_loss(original_weight - epsilon)
+    ) / (2 * epsilon)
+    model.w1[0][0] = original_weight
+
+    updated.train([(sample_x, sample_y)], epochs=1, learning_rate=learning_rate)
+    analytic_gradient = (original_weight - updated.w1[0][0]) / learning_rate
+    assert analytic_gradient == pytest.approx(numeric_gradient, rel=2e-3, abs=2e-5)
