@@ -7,7 +7,7 @@ not yet wired into DecoderLanguageModel parameters.
 from __future__ import annotations
 
 import math
-from typing import Callable
+from collections.abc import Callable
 
 
 class Value:
