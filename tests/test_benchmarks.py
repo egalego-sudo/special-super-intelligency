@@ -19,7 +19,7 @@ MANIFEST = {
 CASES = [
     {"id": "r1", "category": "reasoning", "prompt": "What is 2+2?", "expected": "4"},
     {"id": "c1", "category": "coding", "prompt": "Return output of a tiny function", "expected": "hello"},
-    {"id": "f1", "category": "factuality", "prompt": "Is the claim supported?", "expected": {"supported": True}},
+    {"id": "f1", "category": "factuality", "prompt": "Is the claim supported?", "expected": {"supported": True, "evidence_ids": ["fixture-source-1"]}},
     {"id": "rob1a", "category": "robustness", "prompt": "Paraphrase A", "expected": "", "pair_id": "same-1", "expect_same": True},
     {"id": "rob1b", "category": "robustness", "prompt": "Paraphrase B", "expected": "", "pair_id": "same-1", "expect_same": True},
     {"id": "rob2a", "category": "robustness", "prompt": "Constraint A", "expected": "", "pair_id": "different-1", "expect_same": False},
@@ -44,6 +44,7 @@ def test_benchmark_scores_reasoning_coding_factuality_and_robustness():
     assert report["category_scores"]["reasoning"]["accuracy"] == 1.0
     assert report["category_scores"]["coding"]["accuracy"] == 1.0
     assert report["category_scores"]["factuality"]["support_accuracy"] == 1.0
+    assert report["category_scores"]["factuality"]["citation_precision"] == 1.0
     assert report["category_scores"]["factuality"]["citation_coverage"] == 1.0
     assert report["category_scores"]["robustness"]["consistency_accuracy"] == 1.0
     assert len(report["dataset_sha256"]) == 64
@@ -100,3 +101,28 @@ def test_versioned_benchmark_fixture_loads_and_scores_baseline():
     assert report["version"] == "1.0"
     assert report["cases"] == 7
     assert report["category_scores"]["reasoning"]["accuracy"] == 0.0
+
+
+
+def test_factuality_rejects_unregistered_citation_ids():
+    predictions = dict(PREDICTIONS)
+    predictions["f1"] = {"supported": True, "citations": ["made-up-source"]}
+    report = score_benchmark(
+        MANIFEST, CASES, predictions, approved_licenses=("CC0",)
+    )
+    assert report["category_scores"]["factuality"]["citation_precision"] == 0.0
+    assert report["category_scores"]["factuality"]["citation_coverage"] == 0.0
+
+
+def test_benchmark_comparison_rejects_missing_category_or_metric():
+    report = score_benchmark(
+        MANIFEST, CASES, PREDICTIONS, approved_licenses=("CC0",)
+    )
+    missing_category = copy.deepcopy(report)
+    missing_category["category_scores"].pop("coding")
+    with pytest.raises(ValueError, match="category sets"):
+        compare_benchmarks(report, missing_category)
+    missing_metric = copy.deepcopy(report)
+    missing_metric["category_scores"]["reasoning"].pop("accuracy")
+    with pytest.raises(ValueError, match="metric sets"):
+        compare_benchmarks(report, missing_metric)
