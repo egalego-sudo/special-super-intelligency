@@ -19,9 +19,9 @@
 ## Current verification evidence
 
 - Latest completed Python CI at commit 5d100a17dab87222c19135a360146ef36726a5e0: 171 pytest tests passed; Ruff passed.
-- Current branch CI after the multi-seed runner and review documentation: 171 pytest tests passed; Ruff passed. The multi-seed workflow completed successfully and uploaded artifact `14452956890` (ZIP SHA-256 `ab4ffcf911fb0350afcd2c3a03b9d7d1eaf538c941e6f08291c512790f9e962e`; report SHA-256 `fa0930155cb05abd387073e0afe442e486bde1d85ce0dda19202fcf7d4fe2f22`). Current-head CodeQL and Android emulator smoke remain pending.
-- Python CodeQL has passed on prior commits; current-head CodeQL is NOT VERIFIED until its run completes.
-- Android emulator smoke is NOT VERIFIED until the current-head workflow completes all build, launch, dashboard, footer and offline checks.
+- Current branch CI after the multi-seed runner and review documentation: 171 pytest tests passed; Ruff passed. The multi-seed workflow completed successfully and uploaded artifact `14452956890` (ZIP SHA-256 `ab4ffcf911fb0350afcd2c3a03b9d7d1eaf538c941e6f08291c512790f9e962e`; report SHA-256 `fa0930155cb05abd387073e0afe442e486bde1d85ce0dda19202fcf7d4fe2f22`). Current-head CodeQL and Android emulator smoke both passed on commit `2aa986a0f021af9f3f49730e786aac26dbb08b8f` (Python + Android CodeQL; emulator build, install, launch, dashboard, navigation, creator footer and offline fallback).
+- Current-head CodeQL: PASS for Python and Android Java/Kotlin on `2aa986a0f021af9f3f49730e786aac26dbb08b8f`.
+- Android emulator smoke: PASS on `2aa986a0f021af9f3f49730e786aac26dbb08f` for build, install, launch, dashboard, first-module navigation, creator footer and offline fallback. Live remote config sync inside the emulator can still be DNS-limited; runner-side remote JSON verification passed.
 - Docker sandbox is verified through mocked command-boundary tests; execution against a real adversarial container on a hardened host is NOT VERIFIED.
 
 ## Critical limitations
@@ -36,7 +36,7 @@
 
 ## Final disposition
 
-Phase 2 engineering packages 01–19 have implementation and test evidence. Package 20 cannot honestly be marked complete until an independent review and fair same-dataset comparison against selected public baselines are performed. Therefore Phase 2 remains at 95%, not 100%.
+Phase 2 engineering packages 01–19 have implementation and test evidence. The internal review and current-head CI/CodeQL/emulator checks are complete. Package 20 remains BLOCKED until an independent third-party review and fair same-dataset comparison against selected capable public-model baselines are performed. Therefore Phase 2 remains at 95%, not 100%.
 
 No claim is made that QUANTUM AI matches or exceeds GPT-6. The 99% ambition remains a strategic design target, not a measured intelligence score.
 
