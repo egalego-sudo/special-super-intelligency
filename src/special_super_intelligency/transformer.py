@@ -4,8 +4,11 @@ This is an untrained, deterministic architecture primitive, not a language model
 """
 from __future__ import annotations
 
+import copy
 import math
 import random
+
+from .autodiff import Value
 
 
 def _linear(vector, weights):
@@ -13,10 +16,18 @@ def _linear(vector, weights):
             for j in range(len(weights[0]))]
 
 
+def _exp(value):
+    return value.exp() if isinstance(value, Value) else math.exp(value)
+
+
+def _tanh(value):
+    return value.tanh() if isinstance(value, Value) else math.tanh(value)
+
+
 def _norm(vector):
     mean = sum(vector) / len(vector)
     variance = sum((x - mean) ** 2 for x in vector) / len(vector)
-    scale = 1.0 / math.sqrt(variance + 1e-5)
+    scale = (variance + 1e-5) ** -0.5
     return [(x - mean) * scale for x in vector]
 
 
@@ -62,7 +73,7 @@ class DecoderTransformerBlock:
                           math.sqrt(self.head_width)
                           for p in range(position + 1)]
                 peak = max(scores)
-                exps = [math.exp(score - peak) for score in scores]
+                exps = [_exp(score - peak) for score in scores]
                 total = sum(exps)
                 probs = [value / total for value in exps]
                 for dimension in range(start, stop):
@@ -78,7 +89,8 @@ class DecoderTransformerBlock:
         if any(not isinstance(token, list) or len(token) != self.width
                for token in sequence):
             raise ValueError("sequence must have the configured width.")
-        if any(type(x) not in (int, float) or not math.isfinite(x)
+        if any(type(x.data if isinstance(x, Value) else x) not in (int, float)
+               or not math.isfinite(x.data if isinstance(x, Value) else x)
                for token in sequence for x in token):
             raise ValueError("sequence values must be finite numbers.")
         normalized = [_norm(token) for token in sequence]
@@ -88,8 +100,8 @@ class DecoderTransformerBlock:
         output = []
         for token in residual:
             hidden = _linear(_norm(token), self.ffn_in)
-            activated = [0.5 * x * (1.0 + math.tanh(
-                math.sqrt(2.0 / math.pi) * (x + 0.044715 * x ** 3)))
+            activated = [0.5 * x * (1.0 + _tanh(
+                math.sqrt(2.0 / math.pi) * (x + 0.044715 * x ** 3))))
                          for x in hidden]
             projected = _linear(activated, self.ffn_out)
             output.append([token[i] + projected[i] for i in range(self.width)])
@@ -162,7 +174,7 @@ class DecoderLanguageModel:
         """Return a stable softmax distribution for the final position."""
         logits = self.forward(token_ids)[-1]
         peak = max(logits)
-        exponentials = [math.exp(value - peak) for value in logits]
+        exponentials = [_exp(value - peak) for value in logits]
         total = sum(exponentials)
         return [value / total for value in exponentials]
 
