@@ -36,6 +36,24 @@ jobs:
           sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - name: Build debug APK
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
+      - name: Verify Android JVM unit test report
+        run: |
+          python - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+
+          reports = glob.glob("app/build/test-results/testDebugUnitTest/TEST-*.xml")
+          if not reports:
+              raise SystemExit("No Android JVM unit test XML reports were produced.")
+          totals = {"tests": 0, "failures": 0, "errors": 0, "skipped": 0}
+          for report in reports:
+              root = ET.parse(report).getroot()
+              for key in totals:
+                  totals[key] += int(root.attrib.get(key, 0))
+          print("Android JVM unit tests:", totals)
+          if totals["tests"] < 1 or totals["failures"] or totals["errors"]:
+              raise SystemExit("Android JVM unit tests did not pass.")
+          PY
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
