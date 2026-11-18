@@ -46,3 +46,10 @@ def test_non_callable_handler_is_rejected():
     registry = ToolRegistry()
     with pytest.raises(TypeError):
         registry.register(ToolSpec("broken", None))  # type: ignore[arg-type]
+
+
+def test_truthy_non_boolean_does_not_count_as_approval():
+    registry = ToolRegistry()
+    registry.register(ToolSpec("publish", lambda _: "published", ActionRisk.HIGH))
+    with pytest.raises(ApprovalRequired):
+        registry.invoke("publish", {}, human_approved="yes")  # type: ignore[arg-type]
