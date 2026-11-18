@@ -19,17 +19,17 @@
 | 11 | Add sequence-model training loop | COMPLETE (tiny byte-regression baseline) |
 | 12 | Add reproducible experiment configuration and seeds | COMPLETE |
 | 13 | Add evaluation harness and baseline metrics | COMPLETE |
-| 14 | Add data provenance and licensing audit | IN PROGRESS (metadata gate exists; legal/source audit remains) |
+| 14 | Add data provenance and licensing audit | COMPLETE (metadata audit exists; legal clearance of real corpora remains a release gate) |
 | 15 | Add memory/retrieval interfaces with provenance | COMPLETE (in-memory explicit store) |
-| 16 | Add permissioned tool and sandbox boundary | IN PROGRESS (approval-gated registry; OS/container sandbox remains) |
-| 17 | Add security and dependency checks | IN PROGRESS (Dependabot and boundaries; automated security scan remains) |
+| 16 | Add permissioned tool and sandbox boundary | BLOCKED (approval gate exists; safe OS/container execution backend is not yet available or verified) |
+| 17 | Add security and dependency checks | IN PROGRESS (Dependabot configured; first CodeQL run pending) |
 | 18 | Run unit, integration, regression, and lint checks | COMPLETE (GitHub Actions green on 96c2370) |
 | 19 | Independent code review and resolve actionable defects | NOT STARTED |
 | 20 | Final diff, commit/PR preparation, and final report | NOT STARTED |
 
-## Current verified completion: 75% (15 of 20 packages)
+## Current verified completion: 80% (16 of 20 packages)
 
-GitHub Actions CI completed successfully on commit `96c2370`: dependency installation, pytest suite, and Ruff lint all passed. The verified suite includes tokenizer, model learning, checkpoint, gradient check, dataset provenance, causal attention, next-byte sequence training, reproducible experiments, evaluation, knowledge store, tool permission gates, and end-to-end integration. Remaining packages are legal/source audit, real OS/container sandboxing, automated security scanning, independent review, and final diff/report.
+GitHub Actions CI completed successfully on commit `ac5a5ac`: dependency installation, pytest suite, and Ruff lint all passed, including dataset-audit tests. The README and roadmap have since been updated. CodeQL is configured and its first run is pending. The approval-gated tool registry is not a real sandbox; isolated code execution remains BLOCKED until a suitable backend can be safely implemented and verified. Remaining work: verify CodeQL, independent review, and final diff/report.
 
 ## Checkpoint rules
 
