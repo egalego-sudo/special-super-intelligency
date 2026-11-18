@@ -121,3 +121,60 @@ class TinyMLP:
                     self.w2[k][j] -= learning_rate * grad_w2[k][j]
 
         return TrainingReport(initial_loss, loss(), epochs)
+
+    def save_checkpoint(self, path: str) -> None:
+        """Save model parameters as versioned JSON for reproducible experiments."""
+        import json
+        from pathlib import Path
+
+        payload = {
+            "format_version": 1,
+            "input_size": self.input_size,
+            "hidden_size": self.hidden_size,
+            "output_size": self.output_size,
+            "w1": self.w1,
+            "b1": self.b1,
+            "w2": self.w2,
+            "b2": self.b2,
+        }
+        Path(path).write_text(json.dumps(payload, allow_nan=False), encoding="utf-8")
+
+    @classmethod
+    def load_checkpoint(cls, path: str) -> "TinyMLP":
+        """Load a checkpoint only when version, dimensions, shapes, and values validate."""
+        import json
+        from pathlib import Path
+
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        if not isinstance(payload, dict) or payload.get("format_version") != 1:
+            raise ValueError("Unsupported or invalid checkpoint format.")
+        model = cls(
+            input_size=payload.get("input_size"),
+            hidden_size=payload.get("hidden_size"),
+            output_size=payload.get("output_size"),
+        )
+        expected = {
+            "w1": (model.hidden_size, model.input_size),
+            "b1": (model.hidden_size,),
+            "w2": (model.output_size, model.hidden_size),
+            "b2": (model.output_size,),
+        }
+        for name, shape in expected.items():
+            values = payload.get(name)
+            if len(shape) == 1:
+                valid = isinstance(values, list) and len(values) == shape[0]
+            else:
+                valid = (
+                    isinstance(values, list)
+                    and len(values) == shape[0]
+                    and all(isinstance(row, list) and len(row) == shape[1] for row in values)
+                )
+            if not valid:
+                raise ValueError(f"Invalid checkpoint shape for {name}.")
+            flat = values if len(shape) == 1 else [value for row in values for value in row]
+            if any(not isinstance(value, (int, float)) or not math.isfinite(value)
+                   for value in flat):
+                raise ValueError(f"Invalid checkpoint values for {name}.")
+            setattr(model, name, [[float(v) for v in row] for row in values]
+                    if len(shape) == 2 else [float(v) for v in values])
+        return model
