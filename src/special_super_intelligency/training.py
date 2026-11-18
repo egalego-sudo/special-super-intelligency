@@ -92,12 +92,16 @@ def scheduled_learning_rate(base_rate, epoch, total_epochs, *,
         raise ValueError("minimum_rate must be finite and between zero and base_rate.")
     if schedule not in ("constant", "linear", "cosine"):
         raise ValueError("schedule must be constant, linear or cosine.")
+    if total_epochs == 1:
+        return base_rate
     if warmup_epochs and epoch <= warmup_epochs:
         return base_rate * epoch / warmup_epochs
     if schedule == "constant":
         return base_rate
-    span = total_epochs - warmup_epochs
-    progress = (epoch - warmup_epochs) / span
+    span = total_epochs - warmup_epochs - 1
+    progress = 1.0 if span <= 0 else (
+        epoch - warmup_epochs - 1
+    ) / span
     if schedule == "linear":
         return base_rate + (minimum_rate - base_rate) * progress
     return minimum_rate + (base_rate - minimum_rate) * (
