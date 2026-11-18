@@ -25,9 +25,9 @@ def test_model_trains_and_evaluates_provenance_tagged_text():
     ]
     model = DecoderLanguageModel(vocab_size=256, width=2, heads=1, layers=1, seed=97)
     initial, final = model.train_text(
-        examples, epochs=2, learning_rate=0.01, max_grad_norm=1.0
+        examples, approved_licenses=("CC0",), epochs=2, learning_rate=0.01, max_grad_norm=1.0
     )
-    metrics = model.evaluate_text(examples)
+    metrics = model.evaluate_text(examples, approved_licenses=("CC0",))
     assert math.isfinite(initial)
     assert math.isfinite(final)
     assert set(metrics) == {"loss", "perplexity", "accuracy", "tokens"}
@@ -46,13 +46,13 @@ def test_training_pipeline_rejects_vocabulary_mismatch():
     model = DecoderLanguageModel(vocab_size=32, width=2, heads=1, layers=1)
     examples = [TextExample("abc", "test author", "CC0")]
     with pytest.raises(ValueError, match="vocabulary"):
-        model.train_text(examples)
+        model.train_text(examples, approved_licenses=("CC0",))
 
 
 def test_evaluation_rejects_empty_text_pairs():
     model = DecoderLanguageModel(vocab_size=256, width=2, heads=1, layers=1)
     with pytest.raises(ValueError, match="no next-token"):
-        evaluate_examples(model, [TextExample("x", "source", "CC0")])
+        evaluate_examples(model, [TextExample("x", "source", "CC0")], approved_licenses=("CC0",))
 
 def test_fit_selects_and_restores_best_validation_checkpoint(tmp_path):
     training = [
@@ -71,6 +71,7 @@ def test_fit_selects_and_restores_best_validation_checkpoint(tmp_path):
         learning_rate=0.005,
         seed=17,
         checkpoint_path=checkpoint,
+        approved_licenses=("CC0",),
     )
     assert result["best_epoch"] in (1, 2, 3)
     assert len(result["history"]) == 3
@@ -91,8 +92,8 @@ def test_fit_is_reproducible_for_same_seed():
     first = DecoderLanguageModel(vocab_size=256, width=2, heads=1, layers=1, seed=113)
     second = DecoderLanguageModel(vocab_size=256, width=2, heads=1, layers=1, seed=113)
 
-    first_result = first.fit(training, validation, epochs=2, seed=23, learning_rate=0.005)
-    second_result = second.fit(training, validation, epochs=2, seed=23, learning_rate=0.005)
+    first_result = first.fit(training, validation, epochs=2, seed=23, learning_rate=0.005, approved_licenses=("CC0",))
+    second_result = second.fit(training, validation, epochs=2, seed=23, learning_rate=0.005, approved_licenses=("CC0",))
     assert first_result == second_result
     assert first.forward([97, 98]) == second.forward([97, 98])
 
@@ -136,6 +137,7 @@ def test_fit_early_stops_after_patience_and_restores_best(tmp_path):
         patience=1,
         min_delta=100.0,
         checkpoint_path=tmp_path / "early-stop.json",
+        approved_licenses=("CC0",),
     )
     assert result["stopped_early"] is True
     assert result["epochs_completed"] == 2
@@ -148,7 +150,7 @@ def test_fit_rejects_invalid_early_stopping_configuration():
     validation = [TextExample("baba", "validation author", "CC0")]
     model = DecoderLanguageModel(vocab_size=256, width=2, heads=1, layers=1)
     with pytest.raises(ValueError, match="patience"):
-        model.fit(training, validation, epochs=2, patience=0)
+        model.fit(training, validation, epochs=2, patience=0, approved_licenses=("CC0",))
 
 
 def test_tiny_corpus_experiment_measures_overfit_and_heldout_generalization():
