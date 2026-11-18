@@ -41,3 +41,41 @@ The 100% figure applies only to this initial 20-package repository-foundation mi
 - Failed or unavailable checks remain FAILED or NOT VERIFIED; never imply success.
 - Production deployment and release publication require explicit user approval.
 - Resume by inspecting this file and the actual repository state before editing.
+
+
+---
+
+# Android Control App v1.2 — Verified Update Checkpoint
+
+**Scope:** dark dashboard refresh, remote-link validation, build verification, and device-level release checks.  
+**This percentage applies only to this Android control-app update; it is not the completion percentage of the full AI research mission.**  
+**Evidence branch:** `android-control-app-v1`  
+**Code checkpoint:** `6077e62cd45eaf44bbef914be4a0ead447afcfc9`
+
+Each of the 20 work packages below is worth 5 percentage points. A package is complete only when its GitHub change or GitHub test evidence is present.
+
+| ID | Work package | Status | Evidence |
+|---|---|---|---|
+| 01 | Re-check PR, branch head, changed files, and source baseline | COMPLETE | PR #3 and branch source inspected |
+| 02 | Implement black background, white text, and dark surfaces | COMPLETE | Commit `08e78c920afe1235b0a8fdebfde1f51068a7ba22` |
+| 03 | Restrict remote module document links to this repository's approved docs paths | COMPLETE | Commit `6077e62cd45eaf44bbef914be4a0ead447afcfc9` |
+| 04 | Run Python regression suite and lint on the current code checkpoint | COMPLETE | CI run `44327239506`: 65 passed; Ruff passed |
+| 05 | Build Android debug APK on the current code checkpoint | IN PROGRESS | Android APK run `44327225587` |
+| 06 | Complete CodeQL analysis on the current code checkpoint | IN PROGRESS | CodeQL run `44327239177` |
+| 07 | Confirm APK artifact is uploaded and downloadable | PENDING | — |
+| 08 | Inspect APK package metadata, structure, and signing state | PENDING | — |
+| 09 | Review final Java source and remote-config failure paths | PENDING | — |
+| 10 | Install APK on a physical Android device | NOT VERIFIED | Device access unavailable in GitHub CI |
+| 11 | Verify app launch and dark theme on a physical device | NOT VERIFIED | Device access unavailable in GitHub CI |
+| 12 | Verify all 14 module cards and labels on-device | NOT VERIFIED | Device access unavailable in GitHub CI |
+| 13 | Verify live dashboard sync against the approved GitHub config | NOT VERIFIED | No Android runtime test yet |
+| 14 | Verify invalid remote document URLs are rejected at runtime | NOT VERIFIED | No Android runtime test yet |
+| 15 | Verify offline fallback at runtime | NOT VERIFIED | No Android runtime test yet |
+| 16 | Verify module document/edit/search navigation on-device | NOT VERIFIED | No Android runtime test yet |
+| 17 | Verify all 14 module navigation destinations | NOT VERIFIED | No Android runtime test yet |
+| 18 | Check touch targets, contrast, and accessibility on-device | NOT VERIFIED | No Android runtime test yet |
+| 19 | Complete independent diff review and update evidence | PENDING | — |
+| 20 | Re-check PR state and publish final verified report | PENDING | — |
+
+**Verified progress at this checkpoint: 20% (4 of 20 packages).**  
+This is the Android control-app update scope only. The full AI research system remains a separate, much larger unfinished mission. No merge, production deployment, or release publication is authorized by this checkpoint.
