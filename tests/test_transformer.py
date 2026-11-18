@@ -100,3 +100,20 @@ def test_language_model_does_not_leak_future_tokens():
     changed = model.forward([1, 2, 9])
     assert first[0] == changed[0]
     assert first[1] == changed[1]
+
+
+def test_language_model_trains_output_head_and_reduces_loss():
+    from special_super_intelligency.transformer import DecoderLanguageModel
+
+    model = DecoderLanguageModel(vocab_size=7, width=4, heads=2, layers=1, seed=53)
+    samples = [([1, 2], 3), ([1, 2], 3), ([2, 1], 3)]
+    initial, final = model.train_output_head(samples, epochs=80, learning_rate=0.2)
+    assert final < initial
+
+
+def test_language_model_training_rejects_invalid_target():
+    from special_super_intelligency.transformer import DecoderLanguageModel
+
+    model = DecoderLanguageModel(vocab_size=5, width=4, heads=2, layers=1)
+    with pytest.raises(ValueError):
+        model.train_output_head([([1, 2], 5)])
