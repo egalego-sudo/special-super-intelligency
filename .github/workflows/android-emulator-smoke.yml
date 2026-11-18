@@ -132,16 +132,17 @@ jobs:
       - name: Report remote sync verification or emulator DNS limitation
         run: |
           python - <<'PY'
+          import os
           import xml.etree.ElementTree as ET
           texts=[n.attrib.get("text","") for n in ET.parse("/tmp/ssi-emulator/online.xml").getroot().iter("node")]
           status=next((value for value in texts if "LIVE CONFIG SYNCED" in value or "Offline mode" in value), "No sync status reported")
           if "LIVE CONFIG SYNCED" in status:
               print("Remote sync verified inside emulator.")
-              with open("$GITHUB_STEP_SUMMARY", "a", encoding="utf-8") as summary:
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
                   summary.write("- Remote config sync: PASS inside Android emulator.\\n")
           elif "UnknownHostException" in status:
               print(f"Remote sync NOT VERIFIED: emulator DNS/network unavailable: {status}")
-              with open("$GITHUB_STEP_SUMMARY", "a", encoding="utf-8") as summary:
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
                   summary.write(f"- Remote config sync: NOT VERIFIED — emulator DNS/network unavailable ({status}).\\n")
           else:
               raise SystemExit(f"Unexpected remote sync state: {status}")
