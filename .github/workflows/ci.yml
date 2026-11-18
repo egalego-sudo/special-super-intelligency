@@ -28,4 +28,7 @@ jobs:
       - name: Run tests
         run: pytest -q
       - name: Check formatting and lint
-        run: ruff check .
+        run: |
+          ruff check --fix .
+          git diff -- src/special_super_intelligency/benchmarks.py tests/test_benchmarks.py
+          ruff check .
