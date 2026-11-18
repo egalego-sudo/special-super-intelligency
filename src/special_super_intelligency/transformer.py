@@ -9,6 +9,7 @@ import math
 import random
 
 from .autodiff import Value
+from .optim import AdamW
 
 
 def _linear(vector, weights):
@@ -248,9 +249,9 @@ class DecoderLanguageModel:
         return initial_loss, calculate_loss()
 
 
-    def train(self, samples, *, epochs=10, learning_rate=0.01,
-              max_grad_norm=1.0):
-        """Train every decoder parameter with reverse-mode autodiff and SGD.
+    def train(self, samples, *, epochs=10, learning_rate=0.001,
+              max_grad_norm=1.0, weight_decay=0.01):
+        """Train every decoder parameter with reverse-mode autodiff and AdamW.
 
         Samples are (context token IDs, target token ID). This deliberately
         small reference trainer favors correctness and inspectability over speed.
@@ -259,12 +260,6 @@ class DecoderLanguageModel:
             raise ValueError("At least one training sample is required.")
         if type(epochs) is not int or epochs <= 0:
             raise ValueError("epochs must be a positive integer.")
-        for name, value in (("learning_rate", learning_rate),
-                            ("max_grad_norm", max_grad_norm)):
-            if (type(value) not in (int, float) or not math.isfinite(value)
-                    or value <= 0):
-                raise ValueError(f"{name} must be positive and finite.")
-
         validated = []
         for context, target in samples:
             self._encode(context)
@@ -282,21 +277,30 @@ class DecoderLanguageModel:
             return total_loss / len(validated)
 
         def parameter_groups(model):
-            groups = [("embedding", model.embedding),
-                      ("output_projection", model.output_projection)]
-            for index, block in enumerate(model.blocks):
+            groups = [model.embedding, model.output_projection]
+            for block in model.blocks:
                 for name in ("query", "key", "value", "attention_output",
                              "ffn_in", "ffn_out"):
-                    groups.append((f"blocks.{index}.{name}", getattr(block, name)))
+                    groups.append(getattr(block, name))
             return groups
 
+        tracked = copy.deepcopy(self)
+        groups = parameter_groups(tracked)
+        parameters = []
+        for matrix in groups:
+            for row_index, row in enumerate(matrix):
+                matrix[row_index] = [Value(value) for value in row]
+                parameters.extend(matrix[row_index])
+
+        optimizer = AdamW(
+            learning_rate=learning_rate,
+            max_grad_norm=max_grad_norm,
+            weight_decay=weight_decay,
+        )
         initial_loss = measure_loss()
         for _ in range(epochs):
-            tracked = copy.deepcopy(self)
-            for _, matrix in parameter_groups(tracked):
-                for row_index, row in enumerate(matrix):
-                    matrix[row_index] = [Value(value) for value in row]
-
+            for parameter in parameters:
+                parameter.grad = 0.0
             loss = Value(0.0)
             for context, target in validated:
                 logits = tracked.forward(context)[-1]
@@ -305,26 +309,12 @@ class DecoderLanguageModel:
                 total = sum(exps)
                 loss = loss - (exps[target] / total).log() / len(validated)
             loss.backward()
+            optimizer.step(parameters)
 
-            original_groups = parameter_groups(self)
-            tracked_groups = parameter_groups(tracked)
-            gradient_norm_sq = 0.0
-            for (_, original), (_, learned) in zip(original_groups, tracked_groups):
-                for row in learned:
-                    for parameter in row:
-                        gradient_norm_sq += parameter.grad ** 2
-            gradient_norm = math.sqrt(gradient_norm_sq)
-            if not math.isfinite(gradient_norm):
-                raise ArithmeticError("Non-finite gradient detected.")
-            clip_scale = min(1.0, max_grad_norm / max(gradient_norm, 1e-12))
-
-            for (_, original), (_, learned) in zip(original_groups, tracked_groups):
-                for row_index, row in enumerate(original):
-                    for column_index, value in enumerate(row):
-                        gradient = learned[row_index][column_index].grad
-                        updated = value - learning_rate * clip_scale * gradient
-                        if not math.isfinite(updated):
-                            raise ArithmeticError("Non-finite parameter update detected.")
-                        row[column_index] = updated
+        # Copy the learned scalar values back to the ordinary inference model.
+        destination_groups = parameter_groups(self)
+        for destination, learned in zip(destination_groups, groups):
+            for row_index, row in enumerate(learned):
+                destination[row_index] = [parameter.data for parameter in row]
 
         return initial_loss, measure_loss()
