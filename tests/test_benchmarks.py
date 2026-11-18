@@ -2,7 +2,11 @@ import copy
 
 import pytest
 
-from special_super_intelligency.benchmarks import compare_benchmarks, score_benchmark
+from special_super_intelligency.benchmarks import (
+    compare_benchmarks,
+    load_benchmark_bundle,
+    score_benchmark,
+)
 
 
 MANIFEST = {
@@ -83,3 +87,16 @@ def test_benchmark_comparison_rejects_different_datasets():
     )
     with pytest.raises(ValueError, match="different datasets"):
         compare_benchmarks(first, second)
+
+
+def test_versioned_benchmark_fixture_loads_and_scores_baseline():
+    bundle = load_benchmark_bundle("benchmarks/synthetic_smoke_v1.json")
+    report = score_benchmark(
+        bundle["manifest"],
+        bundle["cases"],
+        bundle["baseline_predictions"],
+        approved_licenses=("CC0",),
+    )
+    assert report["version"] == "1.0"
+    assert report["cases"] == 7
+    assert report["category_scores"]["reasoning"]["accuracy"] == 0.0
