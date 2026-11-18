@@ -134,7 +134,8 @@ public class MainActivity extends Activity {
         for(int i=0;i<rows.length;i++) {
             Module m=new Module(new JSONObject());
             m.id=rows[i][0];m.title=rows[i][1];m.summary=rows[i][2];m.details=rows[i][3];m.status=rows[i][4];
-            m.anchor="#"+String.format(java.util.Locale.US,"%02d",i+1)+"-"+m.id;\n            m.docUrl=REPO+"/blob/android-control-app-v1/docs/modules/"+String.format(java.util.Locale.US,"%02d",i+1)+"-"+m.id+".md";
+            m.anchor="#"+String.format(java.util.Locale.US,"%02d",i+1)+"-"+m.id;
+            m.docUrl=REPO+"/blob/android-control-app-v1/docs/modules/"+String.format(java.util.Locale.US,"%02d",i+1)+"-"+m.id+".md";
             modules.add(m);
         }
     }
