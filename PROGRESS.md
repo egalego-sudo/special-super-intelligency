@@ -67,17 +67,17 @@ Each of the 20 work packages below is worth 5 percentage points. A package is co
 | 09 | Review final Java source and remote-config failure paths | COMPLETE | Dark palette, 14-card fallback, fail-closed document URL allowlist, and sync error fallback reviewed |
 | 10 | Install APK on a physical Android device | NOT VERIFIED | Device access unavailable in GitHub CI |
 | 11 | Verify app launch and dark theme on a physical device | NOT VERIFIED | Device access unavailable in GitHub CI |
-| 12 | Verify all 14 module cards and labels on-device | NOT VERIFIED | Device access unavailable in GitHub CI |
+| 12 | Verify all 14 module card definitions and labels in remote config and local fallback | COMPLETE | GitHub source check: 14 unique remote module IDs and 14 fallback rows; IDs match |
 | 13 | Verify live dashboard sync against the approved GitHub config | NOT VERIFIED | No Android runtime test yet |
 | 14 | Verify invalid remote document URLs are rejected at runtime | NOT VERIFIED | No Android runtime test yet |
 | 15 | Verify offline fallback at runtime | NOT VERIFIED | No Android runtime test yet |
 | 16 | Verify module document/edit/search navigation on-device | NOT VERIFIED | No Android runtime test yet |
-| 17 | Verify all 14 module navigation destinations | NOT VERIFIED | No Android runtime test yet |
+| 17 | Verify all 14 module destination documents exist in the branch | COMPLETE | GitHub tree check: all 14 configured module doc paths exist |
 | 18 | Check touch targets, contrast, and accessibility on-device | NOT VERIFIED | No Android runtime test yet |
 | 19 | Complete independent diff review and update evidence | PENDING | — |
 | 20 | Re-check PR state and publish final verified report | PENDING | — |
 
-**Verified progress at this checkpoint: 45% (9 of 20 packages).**  
+**Verified progress at this checkpoint: 55% (11 of 20 packages).**  
 This is the Android control-app update scope only. The full AI research system remains a separate, much larger unfinished mission. No merge, production deployment, or release publication is authorized by this checkpoint.
 
 **CodeQL failure analysis and correction:** The first combined scan failed because CodeQL's `manual` build mode is not supported by the Python extractor. A subsequent Android autobuild exposed a Gradle mismatch (Android Gradle Plugin 8.6.1 requires Gradle 8.7; the autobuilder selected 8.6). The workflow was split into separate Python (`build-mode: none`) and Android Java/Kotlin (`build-mode: manual`) jobs; the Android job installs Gradle 8.7 and the Android SDK. CodeQL Action was upgraded to v4. Both jobs passed on the version 1.2 source checkpoint. These were real failures and were not marked successful until the corrected workflow passed.
