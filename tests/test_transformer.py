@@ -117,3 +117,30 @@ def test_language_model_training_rejects_invalid_target():
     model = DecoderLanguageModel(vocab_size=5, width=4, heads=2, layers=1)
     with pytest.raises(ValueError):
         model.train_output_head([([1, 2], 5)])
+
+
+def test_full_decoder_training_updates_embeddings_attention_and_ffn():
+    from special_super_intelligency.transformer import DecoderLanguageModel
+
+    model = DecoderLanguageModel(vocab_size=5, width=2, heads=1, layers=1, seed=67)
+    before_embedding = model.embedding[1][0]
+    before_query = model.blocks[0].query[0][0]
+    before_ffn = model.blocks[0].ffn_in[0][0]
+    initial, final = model.train(
+        [([1], 2), ([1], 2), ([2], 3)],
+        epochs=8,
+        learning_rate=0.015,
+        max_grad_norm=1.0,
+    )
+    assert final < initial
+    assert model.embedding[1][0] != before_embedding
+    assert model.blocks[0].query[0][0] != before_query
+    assert model.blocks[0].ffn_in[0][0] != before_ffn
+
+
+def test_full_decoder_training_rejects_non_finite_gradients_configuration():
+    from special_super_intelligency.transformer import DecoderLanguageModel
+
+    model = DecoderLanguageModel(vocab_size=5, width=2, heads=1, layers=1)
+    with pytest.raises(ValueError):
+        model.train([([1], 2)], max_grad_norm=float("inf"))
