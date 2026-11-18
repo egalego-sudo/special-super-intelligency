@@ -1,5 +1,6 @@
-import pytest
 import subprocess
+
+import pytest
 
 from special_super_intelligency.sandbox import (
     DockerSandbox,
