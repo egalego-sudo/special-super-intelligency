@@ -94,3 +94,84 @@ class DecoderTransformerBlock:
             projected = _linear(activated, self.ffn_out)
             output.append([token[i] + projected[i] for i in range(self.width)])
         return output
+
+
+class DecoderLanguageModel:
+    """Small untrained decoder-only language-model architecture.
+
+    This composes token embeddings, sinusoidal positions, decoder blocks, and a
+    vocabulary projection. Parameters are initialized randomly; no pretrained
+    weights or training capability are implied by construction alone.
+    """
+
+    def __init__(self, *, vocab_size, width, heads, layers=2,
+                 max_sequence_length=128, seed=7):
+        for name, value in (("vocab_size", vocab_size), ("width", width),
+                            ("heads", heads), ("layers", layers),
+                            ("max_sequence_length", max_sequence_length)):
+            if type(value) is not int or value <= 0:
+                raise ValueError(f"{name} must be a positive integer.")
+        if width % heads:
+            raise ValueError("heads must divide width exactly.")
+        if type(seed) is not int:
+            raise TypeError("seed must be an integer.")
+        self.vocab_size = vocab_size
+        self.width = width
+        self.max_sequence_length = max_sequence_length
+        rng = random.Random(seed)
+        scale = 1.0 / math.sqrt(width)
+        self.embedding = [
+            [rng.uniform(-scale, scale) for _ in range(width)]
+            for _ in range(vocab_size)
+        ]
+        self.blocks = [
+            DecoderTransformerBlock(width=width, heads=heads, seed=seed + i + 1)
+            for i in range(layers)
+        ]
+        self.output_projection = [
+            [rng.uniform(-scale, scale) for _ in range(vocab_size)]
+            for _ in range(width)
+        ]
+
+    def forward(self, token_ids):
+        """Return per-position vocabulary logits for a non-empty token sequence."""
+        if not isinstance(token_ids, list) or not token_ids:
+            raise ValueError("token_ids must be a non-empty list.")
+        if len(token_ids) > self.max_sequence_length:
+            raise ValueError("token sequence exceeds max_sequence_length.")
+        if any(type(token) is not int or not 0 <= token < self.vocab_size
+               for token in token_ids):
+            raise ValueError("token IDs must be integers within the vocabulary.")
+        sequence = []
+        for position, token_id in enumerate(token_ids):
+            vector = []
+            for dimension in range(self.width):
+                angle = position / (10000 ** (2 * (dimension // 2) / self.width))
+                positional = math.sin(angle) if dimension % 2 == 0 else math.cos(angle)
+                vector.append(self.embedding[token_id][dimension] + positional)
+            sequence.append(vector)
+        for block in self.blocks:
+            sequence = block.forward(sequence)
+        return [_linear(token, self.output_projection) for token in sequence]
+
+    def next_token_probabilities(self, token_ids):
+        """Return a stable softmax distribution for the final position."""
+        logits = self.forward(token_ids)[-1]
+        peak = max(logits)
+        exponentials = [math.exp(value - peak) for value in logits]
+        total = sum(exponentials)
+        return [value / total for value in exponentials]
+
+    def generate(self, prompt, *, max_new_tokens=1):
+        """Greedy autoregressive decoding; outputs are untrained until trained."""
+        if type(max_new_tokens) is not int or max_new_tokens < 0:
+            raise ValueError("max_new_tokens must be a non-negative integer.")
+        if not isinstance(prompt, list) or not prompt:
+            raise ValueError("prompt must be a non-empty list.")
+        generated = list(prompt)
+        for _ in range(max_new_tokens):
+            context = generated[-self.max_sequence_length:]
+            probabilities = self.next_token_probabilities(context)
+            generated.append(max(range(self.vocab_size),
+                                 key=lambda index: probabilities[index]))
+        return generated
