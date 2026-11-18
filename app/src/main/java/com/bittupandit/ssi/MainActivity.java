@@ -21,7 +21,7 @@ import java.util.ArrayList;
 
 public class MainActivity extends Activity {
     private static final String REPO = "https://github.com/egalego-sudo/special-super-intelligency";
-    private static final String RAW_CONFIG = "https://raw.githubusercontent.com/egalego-sudo/special-super-intelligency/main/app-config/dashboard.json";
+    private static final String RAW_CONFIG = "https://raw.githubusercontent.com/egalego-sudo/special-super-intelligency/android-control-app-v1/app-config/dashboard.json";
     private static final int BG = Color.rgb(246, 248, 252);
     private static final int INK = Color.rgb(25, 34, 52);
     private static final int MUTED = Color.rgb(102, 115, 136);
@@ -103,8 +103,8 @@ public class MainActivity extends Activity {
         quick.addView(label("ENGINEERING SHORTCUTS",11,ACCENT,true));
         quick.addView(label("Tests, progress and review history",15,INK,true));
         addWideAction(quick,"OPEN TESTS & BUILD HISTORY",REPO+"/actions");
-        addWideAction(quick,"OPEN PROJECT PROGRESS",REPO+"/blob/main/PROGRESS.md");
-        addWideAction(quick,"OPEN 14-POINT ROADMAP",REPO+"/blob/main/docs/roadmap/14-point-roadmap.md");
+        addWideAction(quick,"OPEN PROJECT PROGRESS",REPO+"/blob/android-control-app-v1/PROGRESS.md");
+        addWideAction(quick,"OPEN 14-POINT ROADMAP",REPO+"/blob/android-control-app-v1/docs/roadmap/14-point-roadmap.md");
         root.addView(quick,bottom(14));
 
         TextView creator=label("Creator by Bittu Pandit",12,MUTED,true);
@@ -198,7 +198,7 @@ public class MainActivity extends Activity {
     private void showModule(Module m) {
         String message=m.details+"\n\nCurrent status: "+m.status+"\n\nDashboard button opens this module's roadmap and code search.";
         new AlertDialog.Builder(this).setTitle(m.title).setMessage(message)
-            .setPositiveButton("OPEN ROADMAP",(d,w)->open(REPO+"/blob/main/docs/roadmap/14-point-roadmap.md"+m.anchor))
+            .setPositiveButton("OPEN ROADMAP",(d,w)->open(REPO+"/blob/android-control-app-v1/docs/roadmap/14-point-roadmap.md"+m.anchor))
             .setNeutralButton("SEARCH MODULE CODE",(d,w)->open(REPO+"/search?q="+Uri.encode(m.id)+"&type=code"))
             .setNegativeButton("CLOSE",null).show();
     }
