@@ -41,7 +41,7 @@ def audit_provenance(examples, *, approved_licenses):
         source_counts[example.source.strip()] += 1
         for value in (example.text, example.source, example.license):
             digest.update(value.strip().encode("utf-8"))
-            digest.update(b"\\0")
+            digest.update(bytes([0]))
 
     return {
         "records": len(examples),
