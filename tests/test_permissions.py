@@ -40,3 +40,9 @@ def test_invalid_argument_types_are_rejected():
     registry.register(ToolSpec("echo", lambda _: "ok"))
     with pytest.raises(TypeError):
         registry.invoke("echo", {"bad": 1})  # type: ignore[dict-item]
+
+
+def test_non_callable_handler_is_rejected():
+    registry = ToolRegistry()
+    with pytest.raises(TypeError):
+        registry.register(ToolSpec("broken", None))  # type: ignore[arg-type]
