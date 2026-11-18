@@ -227,7 +227,7 @@ public class MainActivity extends Activity {
     }
     private Button actionButton(String text,int background,int foreground) {
         Button b=new Button(this);b.setText(text);b.setTextSize(11);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
-        b.setTextColor(foreground);b.setAllCaps(false);b.setMinHeight(dp(46));b.setPadding(dp(8),0,dp(8),0);
+        b.setTextColor(foreground);b.setAllCaps(false);b.setMinHeight(dp(48));b.setPadding(dp(8),0,dp(8),0);
         GradientDrawable bg=new GradientDrawable();bg.setColor(background);bg.setCornerRadius(dp(12));b.setBackground(bg);
         return b;
     }
