@@ -207,15 +207,22 @@ def fit_with_validation(model, training_examples, validation_examples, *,
             learning_rate, epoch, epochs, schedule=schedule,
             warmup_epochs=warmup_epochs, minimum_rate=minimum_learning_rate,
         )
-        train_before, train_after = model.train(
-            ordered,
-            epochs=1,
-            batch_size=batch_size,
-            learning_rate=epoch_learning_rate,
-            max_grad_norm=max_grad_norm,
-            weight_decay=weight_decay,
-            optimizer=optimizer,
-        )
+        if epoch_learning_rate == 0.0:
+            train_before = evaluate_examples(
+                model, training_examples, tokenizer=tokenizer,
+                approved_licenses=approved_licenses,
+            )["loss"]
+            train_after = train_before
+        else:
+            train_before, train_after = model.train(
+                ordered,
+                epochs=1,
+                batch_size=batch_size,
+                learning_rate=epoch_learning_rate,
+                max_grad_norm=max_grad_norm,
+                weight_decay=weight_decay,
+                optimizer=optimizer,
+            )
         validation_metrics = evaluate_examples(
             model, validation_examples, tokenizer=tokenizer,
             approved_licenses=approved_licenses,
