@@ -47,11 +47,17 @@ def score_benchmark(manifest, cases, predictions, *, approved_licenses):
             raise ValueError(f"Unsupported benchmark category: {category}.")
         if not isinstance(case["prompt"], str) or not case["prompt"].strip():
             raise ValueError("Every benchmark prompt must be non-empty.")
-        if category == "factuality" and (
-            not isinstance(case["expected"], dict)
-            or type(case["expected"].get("supported")) is not bool
-        ):
-            raise ValueError("Factuality expected value must declare a boolean supported label.")
+        if category == "factuality":
+            expected = case["expected"]
+            if (not isinstance(expected, dict)
+                    or type(expected.get("supported")) is not bool
+                    or not isinstance(expected.get("evidence_ids"), list)
+                    or any(not isinstance(item, str) or not item.strip()
+                           for item in expected["evidence_ids"])
+                    or len(set(expected["evidence_ids"])) != len(expected["evidence_ids"])):
+                raise ValueError(
+                    "Factuality expected value must declare supported and unique evidence_ids."
+                )
         if category == "robustness":
             if (not isinstance(case.get("pair_id"), str) or not case["pair_id"].strip()
                     or type(case.get("expect_same")) is not bool):
@@ -89,20 +95,37 @@ def score_benchmark(manifest, cases, predictions, *, approved_licenses):
             }
         elif category == "factuality":
             correct = 0
-            cited = 0
+            supported_claims = 0
+            supported_with_evidence = 0
+            valid_citations = 0
+            total_citations = 0
             for case in selected:
                 prediction = predictions[case["id"]]
                 if not isinstance(prediction, dict) or type(prediction.get("supported")) is not bool:
                     raise ValueError("Factuality predictions require a boolean supported field.")
                 citations = prediction.get("citations", [])
-                if not isinstance(citations, list):
-                    raise TypeError("Factuality citations must be a list.")
+                if (not isinstance(citations, list)
+                        or any(not isinstance(item, str) or not item.strip()
+                               for item in citations)
+                        or len(set(citations)) != len(citations)):
+                    raise ValueError("Factuality citations must be unique non-empty source IDs.")
+                allowed = set(case["expected"]["evidence_ids"])
+                valid = sum(citation in allowed for citation in citations)
                 correct += int(prediction["supported"] == case["expected"]["supported"])
-                cited += int(bool(citations))
+                valid_citations += valid
+                total_citations += len(citations)
+                if case["expected"]["supported"]:
+                    supported_claims += 1
+                    supported_with_evidence += int(valid > 0)
             category_scores[category] = {
                 "cases": len(selected),
                 "support_accuracy": correct / len(selected),
-                "citation_coverage": cited / len(selected),
+                "citation_precision": (
+                    valid_citations / total_citations if total_citations else 1.0
+                ),
+                "citation_coverage": (
+                    supported_with_evidence / supported_claims if supported_claims else 1.0
+                ),
             }
         else:
             pair_results = []
@@ -131,18 +154,30 @@ def compare_benchmarks(candidate, baseline):
     """Compare reports only when they share the exact benchmark dataset hash."""
     if candidate.get("dataset_sha256") != baseline.get("dataset_sha256"):
         raise ValueError("Cannot compare benchmark reports from different datasets.")
+    candidate_categories = candidate.get("category_scores")
+    baseline_categories = baseline.get("category_scores")
+    if (not isinstance(candidate_categories, dict)
+            or not isinstance(baseline_categories, dict)
+            or set(candidate_categories) != set(baseline_categories)):
+        raise ValueError("Benchmark category sets do not match.")
     deltas = {}
-    for category, candidate_metrics in candidate["category_scores"].items():
-        if category not in baseline["category_scores"]:
-            raise ValueError("Benchmark category sets do not match.")
-        baseline_metrics = baseline["category_scores"][category]
-        metric = next(
-            (key for key in ("accuracy", "support_accuracy", "consistency_accuracy")
-             if key in candidate_metrics),
-            None,
-        )
-        if metric is not None:
-            deltas[category] = candidate_metrics[metric] - baseline_metrics[metric]
+    for category, candidate_metrics in candidate_categories.items():
+        baseline_metrics = baseline_categories[category]
+        if (not isinstance(candidate_metrics, dict)
+                or not isinstance(baseline_metrics, dict)
+                or set(candidate_metrics) != set(baseline_metrics)):
+            raise ValueError(f"Benchmark metric sets do not match for {category}.")
+        metric_deltas = {}
+        for metric, value in candidate_metrics.items():
+            if metric == "cases" or metric == "pairs":
+                if value != baseline_metrics[metric]:
+                    raise ValueError(f"Benchmark sample counts do not match for {category}.")
+                continue
+            if (type(value) not in (int, float)
+                    or type(baseline_metrics[metric]) not in (int, float)):
+                raise ValueError(f"Benchmark metric {metric} must be numeric.")
+            metric_deltas[metric] = value - baseline_metrics[metric]
+        deltas[category] = metric_deltas
     return {"dataset_sha256": candidate["dataset_sha256"], "score_deltas": deltas}
 
 
