@@ -45,7 +45,7 @@ class ToolRegistry:
         if name not in self._tools:
             raise PermissionError(f"Tool {name!r} is not registered.")
         spec = self._tools[name]
-        if spec.risk is not ActionRisk.LOW and not human_approved:
+        if spec.risk is not ActionRisk.LOW and human_approved is not True:
             raise ApprovalRequired(f"Tool {name!r} requires explicit human approval.")
         if not isinstance(arguments, dict) or any(
             not isinstance(key, str) or not isinstance(value, str)
