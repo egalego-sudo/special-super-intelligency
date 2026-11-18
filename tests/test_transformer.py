@@ -1,6 +1,6 @@
 import pytest
 
-from special_super_intelligency.transformer import DecoderTransformerBlock
+from special_super_intelligency.transformer import DecoderLanguageModel, DecoderTransformerBlock
 
 
 def test_decoder_block_preserves_sequence_shape():
