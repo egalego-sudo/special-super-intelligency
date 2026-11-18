@@ -170,7 +170,7 @@ def run_decoder_seed_sweep(*, seeds=(131, 137, 139), epochs=20, output_path=None
             ) as temporary:
                 temporary_path = Path(temporary.name)
                 json.dump(report, temporary, sort_keys=True, indent=2, allow_nan=False)
-                temporary.write("\\n")
+                temporary.write("\n")
             os.replace(temporary_path, destination)
         finally:
             if temporary_path is not None and temporary_path.exists():
