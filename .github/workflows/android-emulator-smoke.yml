@@ -87,6 +87,7 @@ jobs:
           adb shell wm density > /tmp/ssi-emulator/density.txt
           adb shell uiautomator dump /sdcard/ssi-window.xml
           adb pull /sdcard/ssi-window.xml /tmp/ssi-emulator/online.xml
+          adb logcat -d -s SSI-DashboardSync:W > /tmp/ssi-emulator/sync.log
           adb exec-out screencap -p > /tmp/ssi-emulator/online.png
       - name: Verify dashboard, live sync, and 48dp touch target
         run: |
@@ -101,6 +102,12 @@ jobs:
           required = ["14-MODULE CONTROL CENTER", "LIVE CONFIG SYNCED"]
           for item in required:
               if not any(item in value for value in texts):
+                  status = next((value for value in texts if "Offline mode" in value or "Syncing dashboard" in value), "No sync status text found")
+                  print(f"Observed dashboard sync status: {status}")
+                  try:
+                      print(open("/tmp/ssi-emulator/sync.log", encoding="utf-8").read())
+                  except OSError:
+                      pass
                   raise SystemExit(f"Missing expected live dashboard text: {item}")
           buttons = [node for node in nodes if "OPEN MODULE" in node.attrib.get("text", "")]
           if len(buttons) != 14:
