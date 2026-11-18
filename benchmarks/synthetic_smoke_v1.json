@@ -24,7 +24,8 @@
       "category": "factuality",
       "prompt": "Is the claim supported?",
       "expected": {
-        "supported": true
+        "supported": true,
+        "evidence_ids": ["fixture-source-1"]
       }
     },
     {
