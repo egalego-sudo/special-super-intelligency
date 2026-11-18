@@ -21,7 +21,7 @@
 | 13 | Add licensed corpus ingestion and source-level provenance audit | COMPLETE | Training, evaluation and fit require an explicit human-approved license allowlist; exact license/source counts and SHA-256 dataset digests recorded separately for train/validation; unapproved license rejection tests; human legal review remains mandatory |
 | 14 | Add configurable temperature, top-k and top-p sampling | COMPLETE | Temperature scaling, top-k truncation, nucleus top-p filtering, seeded sampling and autoregressive generation; stable normalized probabilities, greedy-default compatibility and invalid-parameter tests; CI 128 passed |
 | 15 | Add efficient inference context handling and KV cache | COMPLETE | Per-layer incremental key/value cache, one-token forward path, rolling context rebuild at sequence limit; cached logits match full recomputation; overflow and malformed-cache tests; CI 142 passed |
-| 16 | Add performance profiling and memory/throughput baselines | NOT STARTED | Reproducible hardware-labelled benchmark report |
+| 16 | Add performance profiling and memory/throughput baselines | COMPLETE | `benchmark.py` reports hardware/Python, model parameter count, cached vs full-recompute median latency, tokens/sec and peak Python allocation; asserts output equivalence without imposing noisy speed thresholds; CI 145 passed |
 | 17 | Add broad reasoning, coding, factuality and robustness benchmark harness | NOT STARTED | Fixed datasets, baselines and reproducible scoring |
 | 18 | Add adversarial, prompt-injection and unsafe-tool-use evaluation | NOT STARTED | Threat-model-driven security tests |
 | 19 | Run multiple-seed experiments and preserve full experiment provenance | NOT STARTED | Repeated runs, variance report and artifact hashes |
@@ -29,11 +29,11 @@
 
 ## Verified progress
 
-**75% — 15 of 20 Phase 2 packages complete.**
+**80% — 16 of 20 Phase 2 packages complete.**
 
 The current implementation is an early research prototype. It now includes a dependency-free reverse-mode scalar autodiff engine and a reference trainer that propagates gradients through embeddings, causal attention projections, attention output, feed-forward weights and the vocabulary projection. A deterministic tiny-corpus test verifies loss reduction and updates to embedding, attention and FFN weights; a full-model parameter gradient is checked against finite differences. This is a correctness milestone, not evidence of broad language competence or useful-scale training.
 
-Current GitHub CI on commit `3dbf93e963f20a98d4783c47c4c92751654fb317`: 142 pytest tests passed; Ruff passed. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI. Android emulator smoke previously exposed `UnknownHostException` for `raw.githubusercontent.com`; the workflow now records remote sync as NOT VERIFIED when emulator DNS is unavailable, while independently checking the remote JSON from the runner and continuing UI/offline tests.
+Current GitHub CI on commit `4fa161bbbe6221eebe1bfb77c27370880b0ec215`: 145 pytest tests passed; Ruff passed. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI. Android emulator smoke previously exposed `UnknownHostException` for `raw.githubusercontent.com`; the workflow now records remote sync as NOT VERIFIED when emulator DNS is unavailable, while independently checking the remote JSON from the runner and continuing UI/offline tests.
 
 ## Non-claims and release gates
 
