@@ -48,8 +48,9 @@ class DockerSandbox:
         max_code_bytes: int = 32_768,
         max_output_bytes: int = 65_536,
     ) -> None:
-        if not re.fullmatch(r".+@sha256:[0-9a-f]{64}", image):
-            raise ValueError("Sandbox image must be pinned by an immutable sha256 digest.")
+        if (not isinstance(image, str)
+                or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/:@-]*@sha256:[0-9a-f]{64}", image)):
+            raise ValueError("Sandbox image must be a valid immutable sha256 image reference.")
         if not 1 <= timeout_seconds <= 30:
             raise ValueError("timeout_seconds must be between 1 and 30.")
         if not 1 <= max_code_bytes <= 262_144:
@@ -63,6 +64,10 @@ class DockerSandbox:
 
     def build_command(self, container_name: str | None = None) -> list[str]:
         """Return fixed Docker arguments; user input is never interpolated as flags."""
+        if container_name is not None and not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", container_name
+        ):
+            raise ValueError("container_name must be a safe Docker identifier.")
         command = [
             "docker", "run", "--rm", "-i", "--pull=never",
             "--network=none", "--read-only", "--cap-drop=ALL",

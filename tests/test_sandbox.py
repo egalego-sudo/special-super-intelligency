@@ -78,3 +78,41 @@ def test_missing_docker_refuses_to_run_on_host(monkeypatch):
     monkeypatch.setattr("shutil.which", lambda _: None)
     with pytest.raises(SandboxError, match="refusing host execution"):
         sandbox.run_python("print('hello')")
+
+
+@pytest.mark.parametrize(
+    "image",
+    [
+        "--network=host@sha256:" + "a" * 64,
+        "python:3.11-slim@sha256:" + "A" * 64,
+        "python:3.11-slim@sha256:" + "a" * 63,
+        "python:3.11-slim@sha256:" + "a" * 64 + ";--network=host",
+    ],
+)
+def test_rejects_malformed_or_option_like_image_references(image):
+    with pytest.raises(ValueError, match="immutable sha256"):
+        DockerSandbox(image)
+
+
+@pytest.mark.parametrize("name", ["--network=host", "bad name", "x" * 129, "name;--privileged"])
+def test_container_name_cannot_inject_docker_flags(name):
+    with pytest.raises(ValueError, match="safe Docker identifier"):
+        DockerSandbox(IMAGE).build_command(name)
+
+
+def test_sandbox_command_has_no_host_mounts_or_network_capabilities():
+    command = DockerSandbox(IMAGE).build_command("ssi-test-1")
+    joined = " ".join(command)
+    assert "--network=none" in command
+    assert "--read-only" in command
+    assert "--cap-drop=ALL" in command
+    assert "--security-opt=no-new-privileges" in command
+    assert "--user=65534:65534" in command
+    assert "--memory=128m" in command
+    assert "--cpus=0.5" in command
+    assert "--pids-limit=64" in command
+    assert "--tmpfs=/tmp:rw,noexec,nosuid,size=16m" in command
+    assert "--privileged" not in command
+    assert "docker.sock" not in joined
+    assert "--mount" not in command
+    assert "-v" not in command

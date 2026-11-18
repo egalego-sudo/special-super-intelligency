@@ -1,0 +1,76 @@
+{
+  "manifest": {
+    "name": "QUANTUM AI synthetic capability smoke",
+    "version": "1.0",
+    "split": "test",
+    "source": "author-created synthetic unit fixtures",
+    "license": "CC0"
+  },
+  "cases": [
+    {
+      "id": "r1",
+      "category": "reasoning",
+      "prompt": "What is 2+2?",
+      "expected": "4"
+    },
+    {
+      "id": "c1",
+      "category": "coding",
+      "prompt": "Return output of a tiny function",
+      "expected": "hello"
+    },
+    {
+      "id": "f1",
+      "category": "factuality",
+      "prompt": "Is the claim supported?",
+      "expected": {
+        "supported": true,
+        "evidence_ids": ["fixture-source-1"]
+      }
+    },
+    {
+      "id": "rob1a",
+      "category": "robustness",
+      "prompt": "Paraphrase A",
+      "expected": "",
+      "pair_id": "same-1",
+      "expect_same": true
+    },
+    {
+      "id": "rob1b",
+      "category": "robustness",
+      "prompt": "Paraphrase B",
+      "expected": "",
+      "pair_id": "same-1",
+      "expect_same": true
+    },
+    {
+      "id": "rob2a",
+      "category": "robustness",
+      "prompt": "Constraint A",
+      "expected": "",
+      "pair_id": "different-1",
+      "expect_same": false
+    },
+    {
+      "id": "rob2b",
+      "category": "robustness",
+      "prompt": "Constraint B",
+      "expected": "",
+      "pair_id": "different-1",
+      "expect_same": false
+    }
+  ],
+  "baseline_predictions": {
+    "r1": "wrong",
+    "c1": "hello",
+    "f1": {
+      "supported": false,
+      "citations": []
+    },
+    "rob1a": "same answer",
+    "rob1b": "same answer",
+    "rob2a": "same answer",
+    "rob2b": "same answer"
+  }
+}

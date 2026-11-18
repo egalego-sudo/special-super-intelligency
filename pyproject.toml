@@ -28,3 +28,6 @@ pythonpath = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint.isort]
+known-first-party = ["special_super_intelligency"]
