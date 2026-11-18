@@ -10,7 +10,8 @@
       "summary": "अपना मूल मॉडल, tokenizer, architecture और training pipeline",
       "details": "स्वतंत्र रूप से डिज़ाइन और प्रशिक्षित मॉडल स्टैक। मौजूदा prototype पूर्ण trained foundation model नहीं है।",
       "status": "Research foundation only",
-      "anchor": "#01-independent-foundation-model"
+      "anchor": "#01-independent-foundation-model",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/01-independent-foundation-model.md"
     },
     {
       "id": "extreme-reasoning-intelligence",
@@ -18,7 +19,8 @@
       "summary": "Multi-step reasoning और verification",
       "details": "Planning, tool selection, uncertainty estimation और adversarial testing।",
       "status": "Planned",
-      "anchor": "#02-extreme-reasoning-intelligence"
+      "anchor": "#02-extreme-reasoning-intelligence",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/02-extreme-reasoning-intelligence.md"
     },
     {
       "id": "self-evolving-ai-architecture",
@@ -26,7 +28,8 @@
       "summary": "नियंत्रित architecture improvement",
       "details": "Versioned experiments, rollback और human approval के साथ सुरक्षित सुधार।",
       "status": "Planned",
-      "anchor": "#03-self-evolving-ai-architecture"
+      "anchor": "#03-self-evolving-ai-architecture",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/03-self-evolving-ai-architecture.md"
     },
     {
       "id": "scientific-discovery-intelligence",
@@ -34,7 +37,8 @@
       "summary": "वैज्ञानिक खोज और evidence",
       "details": "Hypothesis generation, literature analysis, experiment design और evidence tracking।",
       "status": "Planned",
-      "anchor": "#04-scientific-discovery-intelligence"
+      "anchor": "#04-scientific-discovery-intelligence",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/04-scientific-discovery-intelligence.md"
     },
     {
       "id": "superhuman-mathematical-engine",
@@ -42,7 +46,8 @@
       "summary": "गणित, proofs और numerical validation",
       "details": "Symbolic/numeric engine, theorem checking और reproducible benchmarks।",
       "status": "Planned",
-      "anchor": "#05-superhuman-mathematical-engine"
+      "anchor": "#05-superhuman-mathematical-engine",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/05-superhuman-mathematical-engine.md"
     },
     {
       "id": "autonomous-software-engineering",
@@ -50,7 +55,8 @@
       "summary": "Code, tests और review",
       "details": "Repository-aware patch generation, tests, regression checks और approval gates।",
       "status": "Early tooling",
-      "anchor": "#06-autonomous-software-engineering"
+      "anchor": "#06-autonomous-software-engineering",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/06-autonomous-software-engineering.md"
     },
     {
       "id": "multi-agent-superintelligence",
@@ -58,7 +64,8 @@
       "summary": "विशेषज्ञ agents का coordination",
       "details": "Task decomposition, communication, conflict resolution और measured coordination।",
       "status": "Planned",
-      "anchor": "#07-multi-agent-superintelligence"
+      "anchor": "#07-multi-agent-superintelligence",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/07-multi-agent-superintelligence.md"
     },
     {
       "id": "advanced-memory-and-knowledge",
@@ -66,7 +73,8 @@
       "summary": "Knowledge और secure memory",
       "details": "Provenance-aware retrieval, privacy boundaries और secure persistence।",
       "status": "Basic prototype",
-      "anchor": "#08-advanced-memory-and-knowledge"
+      "anchor": "#08-advanced-memory-and-knowledge",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/08-advanced-memory-and-knowledge.md"
     },
     {
       "id": "continuous-learning-and-training",
@@ -74,7 +82,8 @@
       "summary": "Training pipelines और safe learning",
       "details": "Dataset validation, checkpoints, evaluation और regression monitoring।",
       "status": "Toy training only",
-      "anchor": "#09-continuous-learning-and-training"
+      "anchor": "#09-continuous-learning-and-training",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/09-continuous-learning-and-training.md"
     },
     {
       "id": "beyond-gpt-6-benchmark-lab",
@@ -82,7 +91,8 @@
       "summary": "Fair benchmarks और measurable evidence",
       "details": "Reasoning, coding, math, science, safety, latency और cost के reproducible tests।",
       "status": "Planned",
-      "anchor": "#10-beyond-gpt-6-benchmark-lab"
+      "anchor": "#10-beyond-gpt-6-benchmark-lab",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/10-beyond-gpt-6-benchmark-lab.md"
     },
     {
       "id": "extreme-engineering-optimization",
@@ -90,7 +100,8 @@
       "summary": "Speed, memory और compute",
       "details": "Profiling के आधार पर latency, throughput, memory और energy optimization।",
       "status": "Planned",
-      "anchor": "#11-extreme-engineering-optimization"
+      "anchor": "#11-extreme-engineering-optimization",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/11-extreme-engineering-optimization.md"
     },
     {
       "id": "security-and-control",
@@ -98,7 +109,8 @@
       "summary": "Sandbox, permissions और audit",
       "details": "Least privilege, secret management, audit logs, threat modeling और security tests।",
       "status": "Initial controls",
-      "anchor": "#12-security-and-control"
+      "anchor": "#12-security-and-control",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/12-security-and-control.md"
     },
     {
       "id": "autonomous-project-execution",
@@ -106,7 +118,8 @@
       "summary": "Task tracking और bounded execution",
       "details": "Task planning, progress reports, test/fix cycles और approval checkpoints।",
       "status": "Initial automation",
-      "anchor": "#13-autonomous-project-execution"
+      "anchor": "#13-autonomous-project-execution",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/13-autonomous-project-execution.md"
     },
     {
       "id": "scientific-proof",
@@ -114,7 +127,8 @@
       "summary": "हर दावे के लिए reproducible proof",
       "details": "99% एक ambition है; independent replication और measurable evidence के बिना इसे उपलब्धि नहीं माना जाएगा।",
       "status": "Validation pending",
-      "anchor": "#14-scientific-proof"
+      "anchor": "#14-scientific-proof",
+      "doc_url": "https://github.com/egalego-sudo/special-super-intelligency/blob/android-control-app-v1/docs/modules/14-scientific-proof.md"
     }
   ]
 }
