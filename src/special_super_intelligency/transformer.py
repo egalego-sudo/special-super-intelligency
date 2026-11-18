@@ -355,3 +355,16 @@ class DecoderLanguageModel:
         from .checkpoint import load_checkpoint
 
         return load_checkpoint(path)
+
+
+    def train_text(self, examples, **training_options):
+        """Train from TextExample records carrying source and license metadata."""
+        from .training import train_from_examples
+
+        return train_from_examples(self, examples, **training_options)
+
+    def evaluate_text(self, examples, *, tokenizer=None):
+        """Evaluate next-token loss, perplexity and accuracy on tagged text."""
+        from .training import evaluate_examples
+
+        return evaluate_examples(self, examples, tokenizer=tokenizer)
