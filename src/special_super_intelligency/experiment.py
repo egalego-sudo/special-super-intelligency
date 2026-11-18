@@ -54,8 +54,8 @@ def run_decoder_tiny_corpus_experiment(*, epochs=20, seed=131):
         vocab_size=256, width=2, heads=1, layers=1,
         max_sequence_length=16, seed=seed,
     )
-    before_training = evaluate_examples(model, training_examples)
-    before_validation = evaluate_examples(model, validation_examples)
+    before_training = evaluate_examples(model, training_examples, approved_licenses=("CC0",))
+    before_validation = evaluate_examples(model, validation_examples, approved_licenses=("CC0",))
     fit = model.fit(
         training_examples,
         validation_examples,
@@ -67,9 +67,10 @@ def run_decoder_tiny_corpus_experiment(*, epochs=20, seed=131):
         schedule="cosine",
         patience=5,
         seed=seed,
+        approved_licenses=("CC0",),
     )
-    after_training = evaluate_examples(model, training_examples)
-    after_validation = evaluate_examples(model, validation_examples)
+    after_training = evaluate_examples(model, training_examples, approved_licenses=("CC0",))
+    after_validation = evaluate_examples(model, validation_examples, approved_licenses=("CC0",))
     return {
         "experiment": "tiny-corpus-overfit-heldout-generalization-v1",
         "synthetic_only": True,
