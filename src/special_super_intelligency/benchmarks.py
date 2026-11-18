@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
 import re
 from collections import defaultdict
 
@@ -75,7 +74,6 @@ def score_benchmark(manifest, cases, predictions, *, approved_licenses):
     ).hexdigest()
 
     category_scores = {}
-    factuality_citations = []
     for category in sorted(_CATEGORIES):
         selected = [case for case in cases if case["category"] == category]
         if not selected:
@@ -105,9 +103,6 @@ def score_benchmark(manifest, cases, predictions, *, approved_licenses):
                 "support_accuracy": correct / len(selected),
                 "citation_coverage": cited / len(selected),
             }
-            factuality_citations.extend(
-                predictions[case["id"]].get("citations", []) for case in selected
-            )
         else:
             pair_results = []
             for pair in grouped.values():
