@@ -98,7 +98,7 @@ jobs:
           root = ET.parse(path).getroot()
           nodes = list(root.iter("node"))
           texts = [node.attrib.get("text", "") for node in nodes]
-          required = ["14-MODULE CONTROL CENTER", "Creator by Bittu Pandit", "LIVE CONFIG SYNCED"]
+          required = ["14-MODULE CONTROL CENTER", "LIVE CONFIG SYNCED"]
           for item in required:
               if not any(item in value for value in texts):
                   raise SystemExit(f"Missing expected live dashboard text: {item}")
@@ -139,6 +139,23 @@ jobs:
               if expected not in texts:
                   raise SystemExit(f"Module dialog missing: {expected}")
           print("Module navigation dialog passed.")
+          PY
+      - name: Verify creator credit at dashboard footer
+        run: |
+          # The creator credit is intentionally below the 14-module list and
+          # engineering shortcuts. Scroll to the end before asserting it.
+          for i in $(seq 1 8); do
+            adb shell input swipe 540 1700 540 350 350
+            sleep 0.3
+          done
+          adb shell uiautomator dump /sdcard/ssi-footer.xml
+          adb pull /sdcard/ssi-footer.xml /tmp/ssi-emulator/footer.xml
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          texts=[n.attrib.get("text","") for n in ET.parse("/tmp/ssi-emulator/footer.xml").getroot().iter("node")]
+          if not any("Creator by Bittu Pandit" in value for value in texts):
+              raise SystemExit("Creator credit was not found after scrolling to the dashboard footer.")
+          print("Creator credit visible at dashboard footer.")
           PY
       - name: Verify offline fallback
         run: |
