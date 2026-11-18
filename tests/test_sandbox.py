@@ -40,6 +40,8 @@ def test_runs_without_shell_and_returns_bounded_output(monkeypatch):
     monkeypatch.setattr("shutil.which", lambda _: "/usr/bin/docker")
 
     def fake_run(command, **kwargs):
+        if command[1] == "rm":
+            return subprocess.CompletedProcess(command, 0)
         assert command[0:2] == ["docker", "run"]
         assert kwargs["shell"] is False
         assert kwargs["timeout"] == 5
