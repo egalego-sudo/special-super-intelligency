@@ -22,14 +22,14 @@
 | 14 | Add data provenance and licensing audit | COMPLETE (metadata audit exists; legal clearance of real corpora remains a release gate) |
 | 15 | Add memory/retrieval interfaces with provenance | COMPLETE (in-memory explicit store) |
 | 16 | Add permissioned tool and sandbox boundary | BLOCKED (approval gate exists; safe OS/container execution backend is not yet available or verified) |
-| 17 | Add security and dependency checks | IN PROGRESS (Dependabot configured; first CodeQL run pending) |
+| 17 | Add security and dependency checks | IN PROGRESS (Dependabot configured; CodeQL succeeded on an earlier commit; latest scan pending) |
 | 18 | Run unit, integration, regression, and lint checks | COMPLETE (GitHub Actions green on 96c2370) |
-| 19 | Independent code review and resolve actionable defects | NOT STARTED |
+| 19 | Independent code review and resolve actionable defects | COMPLETE (model input/checkpoint and tool approval validation hardened) |
 | 20 | Final diff, commit/PR preparation, and final report | NOT STARTED |
 
-## Current verified completion: 80% (16 of 20 packages)
+## Current verified completion: 85% (17 of 20 packages)
 
-GitHub Actions CI completed successfully on commit `ac5a5ac`: dependency installation, pytest suite, and Ruff lint all passed, including dataset-audit tests. The README and roadmap have since been updated. CodeQL is configured and its first run is pending. The approval-gated tool registry is not a real sandbox; isolated code execution remains BLOCKED until a suitable backend can be safely implemented and verified. Remaining work: verify CodeQL, independent review, and final diff/report.
+GitHub Actions CI completed successfully on commit `ac5a5ac`: dependency installation, pytest suite, and Ruff lint all passed, including dataset-audit tests. The README and roadmap have been updated. CodeQL completed successfully on commit `ac5a5ac`; a newer scan after subsequent review changes is pending. Independent review hardened model input/checkpoint validation and required literal boolean approval for high-risk tools. The latest CI before these final approval-gate changes passed; a fresh CI run is pending. The approval-gated tool registry is not a real sandbox; isolated code execution remains BLOCKED until a suitable backend can be safely implemented and verified. Remaining work: verify latest CI/CodeQL and prepare final diff/report.
 
 ## Checkpoint rules
 
