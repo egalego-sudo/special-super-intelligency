@@ -60,7 +60,7 @@ def test_benchmark_baseline_comparison_requires_identical_dataset():
         MANIFEST, CASES, PREDICTIONS, approved_licenses=("CC0",)
     )
     comparison = compare_benchmarks(candidate, baseline)
-    assert comparison["score_deltas"]["reasoning"] == 1.0
+    assert comparison["score_deltas"]["reasoning"]["accuracy"] == 1.0
 
 
 def test_benchmark_rejects_unapproved_license_and_missing_predictions():
