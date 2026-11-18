@@ -1,6 +1,7 @@
 """Independent decoder-only Transformer research block.
 
-This is an untrained, deterministic architecture primitive, not a language model.
+The module includes a small trainable decoder language-model research prototype.
+It is not a foundation-scale model and makes no broad-competence or GPT-6 parity claim.
 """
 from __future__ import annotations
 
