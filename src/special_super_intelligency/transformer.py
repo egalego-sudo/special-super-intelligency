@@ -253,6 +253,44 @@ class DecoderLanguageModel:
         return [_linear(token, self.output_projection)
                 for token in self._encode(token_ids, attention_mask)]
 
+    def create_kv_cache(self):
+        """Create an empty incremental-decoding cache for this model."""
+        return DecoderKVCache(
+            length=0,
+            keys=[[] for _ in self.blocks],
+            values=[[] for _ in self.blocks],
+        )
+
+    def forward_step(self, token_id, cache):
+        """Consume one token and return next-token logits using cached attention."""
+        if type(token_id) is not int or not 0 <= token_id < self.vocab_size:
+            raise ValueError("token ID must be an integer within the vocabulary.")
+        if not isinstance(cache, DecoderKVCache):
+            raise TypeError("cache must be a DecoderKVCache.")
+        if cache.length >= self.max_sequence_length:
+            raise ValueError("KV cache is full; rebuild it from the latest context window.")
+        if len(cache.keys) != len(self.blocks) or len(cache.values) != len(self.blocks):
+            raise ValueError("KV cache layer count does not match the model.")
+        if any(len(cache.keys[index]) != cache.length
+               or len(cache.values[index]) != cache.length
+               for index in range(len(self.blocks))):
+            raise ValueError("KV cache sequence lengths are inconsistent.")
+
+        position = cache.length
+        hidden = []
+        for dimension in range(self.width):
+            angle = position / (10000 ** (2 * (dimension // 2) / self.width))
+            positional = math.sin(angle) if dimension % 2 == 0 else math.cos(angle)
+            hidden.append(self.embedding[token_id][dimension] + positional)
+        for index, block in enumerate(self.blocks):
+            hidden, key, value = block.forward_step(
+                hidden, cache.keys[index], cache.values[index]
+            )
+            cache.keys[index].append(key)
+            cache.values[index].append(value)
+        cache.length += 1
+        return _linear(hidden, self.output_projection)
+
     def forward_batch(self, batch):
         """Run a PaddedBatch and return logits only for each sequence's valid tokens."""
         from .batching import PaddedBatch
@@ -353,9 +391,16 @@ class DecoderLanguageModel:
         greedy = temperature is None and top_k is None and top_p == 1.0
         rng = random.Random(seed)
         generated = list(prompt)
+        cache = self.create_kv_cache()
+        logits = None
+        for token_id in generated[-self.max_sequence_length:]:
+            logits = self.forward_step(token_id, cache)
+
         for _ in range(max_new_tokens):
-            context = generated[-self.max_sequence_length:]
-            logits = self.forward(context)[-1]
+            if cache.length >= self.max_sequence_length:
+                cache = self.create_kv_cache()
+                for token_id in generated[-self.max_sequence_length:]:
+                    logits = self.forward_step(token_id, cache)
             if greedy:
                 next_token = max(range(self.vocab_size), key=lambda index: logits[index])
             else:
@@ -374,6 +419,8 @@ class DecoderLanguageModel:
                         next_token = index
                         break
             generated.append(next_token)
+            if cache.length < self.max_sequence_length:
+                logits = self.forward_step(next_token, cache)
         return generated
 
     def train_output_head(self, samples, *, epochs=100, learning_rate=0.1):
