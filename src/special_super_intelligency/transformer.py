@@ -430,3 +430,12 @@ class DecoderLanguageModel:
         from .training import evaluate_examples
 
         return evaluate_examples(self, examples, tokenizer=tokenizer)
+
+
+    def fit(self, training_examples, validation_examples, **training_options):
+        """Run reproducible training and restore the best validation checkpoint."""
+        from .training import fit_with_validation
+
+        return fit_with_validation(
+            self, training_examples, validation_examples, **training_options
+        )
