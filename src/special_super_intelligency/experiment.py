@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .model import TinyMLP
-from .sequence import build_next_byte_samples, train_next_byte_model
+from .sequence import train_next_byte_model
 
 
 @dataclass(frozen=True)
