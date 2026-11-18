@@ -173,7 +173,12 @@ public class MainActivity extends Activity {
                     syncStatus.setText("LIVE CONFIG SYNCED • "+config.optString("updated_at",""));
                 });
             } catch(Exception e) {
-                runOnUiThread(() -> syncStatus.setText("Offline mode • showing saved 14-module dashboard"));
+                final String reason = e.getClass().getSimpleName()
+                    + (e.getMessage() == null ? "" : ": " + e.getMessage());
+                android.util.Log.w("SSI-DashboardSync", "Remote dashboard sync failed", e);
+                runOnUiThread(() -> syncStatus.setText(
+                    "Offline mode • showing saved 14-module dashboard • " + reason
+                ));
             } finally { if(c!=null)c.disconnect(); }
         }).start();
     }
