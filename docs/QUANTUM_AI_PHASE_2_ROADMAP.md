@@ -16,7 +16,7 @@
 | 08 | Add minibatching, padding and causal/padding attention masks | COMPLETE | `batching.py` right-padding masks; decoder attention excludes padded keys; masked `forward_batch`; variable-size minibatch training; padding leakage and batch-equivalence tests; CI 115 passed |
 | 09 | Add reproducible train/validation training loop with checkpoint selection | COMPLETE | `fit` separates tagged training/validation samples, deterministic seed shuffle, epoch metrics, best validation-loss model selection, checkpoint save and in-memory restore; repeatability and checkpoint-equivalence tests; CI 117 passed |
 | 10 | Add learning-rate schedule and early stopping | COMPLETE | Constant/linear/cosine schedules, optional warmup, min-delta and patience-based early stopping; best-checkpoint restore; boundary and stopping tests; CI 123 passed |
-| 11 | Demonstrate controlled tiny-corpus overfit and held-out generalization measurement | NOT STARTED | Train/validation loss report; no cherry-picked claims |
+| 11 | Demonstrate controlled tiny-corpus overfit and held-out generalization measurement | COMPLETE | `run_decoder_tiny_corpus_experiment` uses separate authored synthetic train/validation fixtures, fixed seed and reproducible training settings; reports train loss change, held-out loss, perplexity, accuracy and generalization gap; CI test confirms overfit and finite held-out metrics |
 | 12 | Add language-model perplexity and next-token accuracy evaluation | COMPLETE | Held-out evaluator returns cross-entropy loss, perplexity, next-token accuracy and token count; metric bounds and dataset integration tests pass |
 | 13 | Add licensed corpus ingestion and source-level provenance audit | NOT STARTED | Dataset license/source audit; unresolved rights block training release |
 | 14 | Add configurable temperature, top-k and top-p sampling | NOT STARTED | Deterministic sampling and probability validity tests |
@@ -29,11 +29,11 @@
 
 ## Verified progress
 
-**55% — 11 of 20 Phase 2 packages complete.**
+**60% — 12 of 20 Phase 2 packages complete.**
 
 The current implementation is an early research prototype. It now includes a dependency-free reverse-mode scalar autodiff engine and a reference trainer that propagates gradients through embeddings, causal attention projections, attention output, feed-forward weights and the vocabulary projection. A deterministic tiny-corpus test verifies loss reduction and updates to embedding, attention and FFN weights; a full-model parameter gradient is checked against finite differences. This is a correctness milestone, not evidence of broad language competence or useful-scale training.
 
-Current GitHub CI on commit `734361d25d28e1a75c94d8581c362d90fac1d9fe`: 123 pytest tests passed; Ruff passed. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI. Android emulator smoke previously exposed `UnknownHostException` for `raw.githubusercontent.com`; the workflow now records remote sync as NOT VERIFIED when emulator DNS is unavailable, while independently checking the remote JSON from the runner and continuing UI/offline tests.
+Current GitHub CI on commit `b888513aba361d8e0bbb27b566eefc2bf5320782`: 123 pytest tests passed; Ruff passed. CodeQL and Android emulator checks are tracked separately and must not be inferred from Python CI. Android emulator smoke previously exposed `UnknownHostException` for `raw.githubusercontent.com`; the workflow now records remote sync as NOT VERIFIED when emulator DNS is unavailable, while independently checking the remote JSON from the runner and continuing UI/offline tests.
 
 ## Non-claims and release gates
 
