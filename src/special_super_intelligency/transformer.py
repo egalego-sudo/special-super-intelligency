@@ -250,8 +250,10 @@ class DecoderLanguageModel:
 
 
     def train(self, samples, *, epochs=10, learning_rate=0.001,
-              max_grad_norm=1.0, weight_decay=0.01):
-        """Train every decoder parameter with reverse-mode autodiff and AdamW.
+              max_grad_norm=1.0, weight_decay=0.01, optimizer="adamw"):
+        """Train every decoder parameter with reverse-mode autodiff.
+
+        Select AdamW for adaptive optimization or SGD for gradient verification.
 
         Samples are (context token IDs, target token ID). This deliberately
         small reference trainer favors correctness and inspectability over speed.
@@ -260,6 +262,13 @@ class DecoderLanguageModel:
             raise ValueError("At least one training sample is required.")
         if type(epochs) is not int or epochs <= 0:
             raise ValueError("epochs must be a positive integer.")
+        if optimizer not in ("adamw", "sgd"):
+            raise ValueError("optimizer must be 'adamw' or 'sgd'.")
+        for name, value in (("learning_rate", learning_rate),
+                            ("max_grad_norm", max_grad_norm)):
+            if (type(value) not in (int, float) or not math.isfinite(value)
+                    or value <= 0):
+                raise ValueError(f"{name} must be positive and finite.")
         validated = []
         for context, target in samples:
             self._encode(context)
@@ -292,11 +301,13 @@ class DecoderLanguageModel:
                 matrix[row_index] = [Value(value) for value in row]
                 parameters.extend(matrix[row_index])
 
-        optimizer = AdamW(
-            learning_rate=learning_rate,
-            max_grad_norm=max_grad_norm,
-            weight_decay=weight_decay,
-        )
+        optimizer_instance = None
+        if optimizer == "adamw":
+            optimizer_instance = AdamW(
+                learning_rate=learning_rate,
+                max_grad_norm=max_grad_norm,
+                weight_decay=weight_decay,
+            )
         initial_loss = measure_loss()
         for _ in range(epochs):
             for parameter in parameters:
@@ -309,7 +320,19 @@ class DecoderLanguageModel:
                 total = sum(exps)
                 loss = loss - (exps[target] / total).log() / len(validated)
             loss.backward()
-            optimizer.step(parameters)
+            if optimizer_instance is not None:
+                optimizer_instance.step(parameters)
+            else:
+                gradient_norm = math.sqrt(sum(item.grad ** 2 for item in parameters))
+                if not math.isfinite(gradient_norm):
+                    raise ArithmeticError("Non-finite gradient detected.")
+                clip_scale = min(
+                    1.0, max_grad_norm / max(gradient_norm, 1e-12)
+                )
+                for parameter in parameters:
+                    parameter.data -= learning_rate * clip_scale * parameter.grad
+                    if not math.isfinite(parameter.data):
+                        raise ArithmeticError("Non-finite SGD parameter update detected.")
 
         # Copy the learned scalar values back to the ordinary inference model.
         destination_groups = parameter_groups(self)
