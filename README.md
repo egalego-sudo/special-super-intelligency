@@ -23,11 +23,12 @@ Develop an independently engineered AI system for reasoning, coding, scientific 
 - Dataset metadata audit for duplicates, source labels, and license allowlists.
 - Explicit in-memory knowledge store with source provenance and deletion.
 - Permission-gated tool registry; elevated and high-risk tools require approval.
+- Optional Docker sandbox runner with no-network, read-only, non-root, resource-limited settings and immutable image requirement.
 - GitHub Actions CI, Dependabot, and CodeQL workflow.
 
 ## Current limitations
 
-This is an early research prototype, not a trained foundation model or production AI assistant. The MLP and next-byte regressor are educational baselines; attention is not yet integrated into a trainable Transformer. There is no multimodal model, large-scale training pipeline, persistent encrypted memory, autonomous multi-agent runtime, or validated OS/container sandbox.
+This is an early research prototype, not a trained foundation model or production AI assistant. The MLP and next-byte regressor are educational baselines; attention is not yet integrated into a trainable Transformer. There is no multimodal model, large-scale training pipeline, persistent encrypted memory, or autonomous multi-agent runtime. The Docker sandbox currently has mocked unit tests only; real container integration and hostile-code isolation are NOT VERIFIED.
 
 ## Verification
 
