@@ -21,6 +21,10 @@ jobs:
           python-version: "3.11"
       - name: Install project and development tools
         run: python -m pip install -e ".[dev]"
+      - name: Pull sandbox image and pin its digest for this run
+        run: |
+          docker pull python:3.11-slim
+          echo "SSI_SANDBOX_IMAGE=$(docker image inspect --format '{{index .RepoDigests 0}}' python:3.11-slim)" >> "$GITHUB_ENV"
       - name: Run tests
         run: pytest -q
       - name: Check formatting and lint
