@@ -6,6 +6,7 @@ Docker socket, secrets, or network are mounted into the execution container.
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -82,7 +83,7 @@ class DockerSandbox:
             raise ValueError("source exceeds the configured code-size limit.")
         if shutil.which("docker") is None:
             raise SandboxError("Docker CLI is unavailable; refusing host execution.")
-        if __import__("os").name != "posix":
+        if os.name != "posix":
             raise SandboxError("The resource-limited Docker runner currently requires a POSIX host.")
         container_name = f"ssi-sandbox-{uuid.uuid4().hex}"
 
