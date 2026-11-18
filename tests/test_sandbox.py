@@ -8,7 +8,6 @@ from special_super_intelligency.sandbox import (
     SandboxTimeout,
 )
 
-
 IMAGE = "python:3.11-slim@sha256:" + "a" * 64
 
 
