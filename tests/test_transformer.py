@@ -124,18 +124,24 @@ def test_full_decoder_training_updates_embeddings_attention_and_ffn():
 
     model = DecoderLanguageModel(vocab_size=5, width=2, heads=1, layers=1, seed=67)
     before_embedding = model.embedding[1][0]
-    before_query = model.blocks[0].query[0][0]
-    before_ffn = model.blocks[0].ffn_in[0][0]
+    before_query = [row[:] for row in model.blocks[0].query]
+    before_ffn = [row[:] for row in model.blocks[0].ffn_in]
     initial, final = model.train(
-        [([1], 2), ([1], 2), ([2], 3)],
+        [([1, 2], 3), ([1, 2], 3), ([2, 1], 4)],
         epochs=8,
         learning_rate=0.015,
         max_grad_norm=1.0,
     )
     assert final < initial
     assert model.embedding[1][0] != before_embedding
-    assert model.blocks[0].query[0][0] != before_query
-    assert model.blocks[0].ffn_in[0][0] != before_ffn
+    assert any(
+        model.blocks[0].query[i][j] != before_query[i][j]
+        for i in range(2) for j in range(2)
+    )
+    assert any(
+        model.blocks[0].ffn_in[i][j] != before_ffn[i][j]
+        for i in range(2) for j in range(8)
+    )
 
 
 def test_full_decoder_training_rejects_non_finite_gradients_configuration():
