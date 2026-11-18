@@ -1,10 +1,11 @@
 """Source-audited benchmark scoring for reasoning, coding, factuality and robustness."""
 from __future__ import annotations
 
-from collections import defaultdict
 import hashlib
 import json
 import re
+
+from collections import defaultdict
 
 
 _CATEGORIES = {"reasoning", "coding", "factuality", "robustness"}
