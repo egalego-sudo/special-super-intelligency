@@ -72,3 +72,76 @@ def evaluate_examples(model, examples, *, tokenizer=None):
         "accuracy": correct / len(samples),
         "tokens": len(samples),
     }
+
+
+def fit_with_validation(model, training_examples, validation_examples, *,
+                        epochs=5, batch_size=None, tokenizer=None,
+                        learning_rate=0.001, max_grad_norm=1.0,
+                        weight_decay=0.01, optimizer="adamw", seed=0,
+                        checkpoint_path=None):
+    """Train reproducibly, select the lowest-validation-loss epoch and restore it."""
+    import copy
+    import random
+
+    tokenizer = tokenizer or ByteTokenizer()
+    if model.vocab_size != tokenizer.vocab_size:
+        raise ValueError("Model vocabulary size must match tokenizer vocabulary size.")
+    if type(epochs) is not int or epochs <= 0:
+        raise ValueError("epochs must be a positive integer.")
+    if type(seed) is not int:
+        raise ValueError("seed must be an integer.")
+
+    training_samples = build_next_token_samples(
+        training_examples, tokenizer, model.max_sequence_length
+    )
+    validation_samples = build_next_token_samples(
+        validation_examples, tokenizer, model.max_sequence_length
+    )
+    best_model = copy.deepcopy(model)
+    best_loss = math.inf
+    best_epoch = 0
+    history = []
+    rng = random.Random(seed)
+
+    for epoch in range(1, epochs + 1):
+        ordered = list(training_samples)
+        rng.shuffle(ordered)
+        train_before, train_after = model.train(
+            ordered,
+            epochs=1,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            max_grad_norm=max_grad_norm,
+            weight_decay=weight_decay,
+            optimizer=optimizer,
+        )
+        validation_metrics = evaluate_examples(
+            model, validation_examples, tokenizer=tokenizer
+        )
+        record = {
+            "epoch": epoch,
+            "training_loss_before": train_before,
+            "training_loss_after": train_after,
+            "validation_loss": validation_metrics["loss"],
+            "validation_perplexity": validation_metrics["perplexity"],
+            "validation_accuracy": validation_metrics["accuracy"],
+            "validation_tokens": validation_metrics["tokens"],
+        }
+        history.append(record)
+        if validation_metrics["loss"] < best_loss:
+            best_loss = validation_metrics["loss"]
+            best_epoch = epoch
+            best_model = copy.deepcopy(model)
+            if checkpoint_path is not None:
+                best_model.save_checkpoint(checkpoint_path)
+
+    # Restore the best validation checkpoint, not merely the final epoch.
+    model.__dict__.clear()
+    model.__dict__.update(copy.deepcopy(best_model.__dict__))
+    return {
+        "best_epoch": best_epoch,
+        "best_validation_loss": best_loss,
+        "history": history,
+        "training_samples": len(training_samples),
+        "validation_samples": len(validation_samples),
+    }
