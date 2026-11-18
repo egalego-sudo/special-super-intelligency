@@ -25,15 +25,15 @@
 | 17 | Add security and dependency checks | COMPLETE (Dependabot configured; CodeQL succeeded on current main commit) |
 | 18 | Run unit, integration, regression, and lint checks | COMPLETE (GitHub Actions green on 96c2370) |
 | 19 | Independent code review and resolve actionable defects | COMPLETE (model input/checkpoint and tool approval validation hardened) |
-| 20 | Final diff, commit/PR preparation, and final report | IN PROGRESS (diff and final verification gathered; report being finalized) |
+| 20 | Final diff, commit preparation, final verification, and report | COMPLETE (final diff recorded; CI and CodeQL both passed on the final code checkpoint) |
 
-## Current verified completion: 95% (19 of 20 packages)
+## Current verified completion: 100% (20 of 20 packages)
 
-GitHub Actions CI completed successfully on commit `ac5a5ac`: dependency installation, pytest suite, and Ruff lint all passed, including dataset-audit tests. The README and roadmap have been updated. CodeQL completed successfully on current main commit `eac2749`. Independent review hardened model input/checkpoint validation and required literal boolean approval for high-risk tools. The latest CI before these final approval-gate changes passed; a fresh CI run is pending. A Docker-backed sandbox now has both unit tests and a real GitHub Actions integration test. The integration checks non-root execution, read-only root filesystem, writable temporary storage, and disabled network using a digest-resolved image. It does not prove resistance to kernel/container escapes; highly hostile workloads still require a VM or dedicated sandbox. Remaining work: finalize and publish this milestone's diff and status report.
+On the final code checkpoint, GitHub Actions CI and CodeQL both completed successfully. CI verified dependency installation, the pytest suite, formatting/lint checks, and the Docker-backed sandbox integration test. CodeQL completed successfully. Independent review hardened model input/checkpoint validation and required literal boolean approval for high-risk tools. A Docker-backed sandbox integration test checks non-root execution, read-only root filesystem, writable temporary storage, and disabled network using a digest-resolved image. This does not prove resistance to kernel/container escapes; highly hostile workloads still require a VM or dedicated sandbox. The final repository diff and milestone report are recorded.
 
 ## Scope clarification
 
-The 95% figure is for this initial 20-package repository-foundation milestone only. It is **not** 95% of the long-term QUANTUM AI / beyond-GPT-6 mission. The full mission remains an early research prototype: a complete trainable Transformer, multimodal model, scalable training pipeline, independently trained foundation weights, durable encrypted memory, multi-agent system, broad reasoning/coding/science benchmarks, and Android production app are not complete.
+The 100% figure applies only to this initial 20-package repository-foundation milestone. It does not mean the complete super-intelligence system is finished. The broader research mission remains an early prototype: a complete trainable Transformer, multimodal model, scalable training pipeline, independently trained foundation weights, durable encrypted memory, multi-agent system, broad reasoning/coding/science benchmarks, and Android production app are not complete.
 
 ## Checkpoint rules
 
